@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diaby Deals Flow — Pipeline & Valorisation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d1825; --ink-2:#13212f; --ink-3:#1b2c3d;
+  --canvas:#eceef1; --surface:#ffffff; --surface-2:#f6f8fa;
+  --text:#152330; --muted:#62748a; --faint:#94a4b5;
+  --line:#d9dfe5; --line-2:#e8edf1;
+  --brass:#b9892c; --brass-d:#9a7020; --brass-bg:#fbf4e3;
+  --blue:#2563eb; --blue-d:#1d4ed8; --blue-bg:#e9f0fe;
+  --teal:#1b5d6b;
+  --green:#1c8a55; --green-bg:#e7f6ee;
+  --amber:#c0851c; --amber-bg:#fbf2dd;
+  --red:#c23b3b; --red-bg:#fbe9e9;
+  --radius:14px; --radius-s:10px;
+  --shadow:0 1px 2px rgba(16,32,48,.05),0 6px 20px rgba(16,32,48,.06);
+  --shadow-l:0 12px 40px rgba(13,24,37,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--canvas);color:var(--text);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{opacity:.5}
+
+/* ---------- Layout shell ---------- */
+.app{display:flex;min-height:100vh}.app.hidden{display:none;}
+.sidebar{width:248px;flex-shrink:0;background:var(--ink);color:#cbd6e2;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:22px 16px;gap:6px}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 18px}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(150deg,var(--brass),var(--brass-d));display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(185,137,44,.35)}
+.brand-mark svg{width:21px;height:21px}
+.brand-name{font-family:'Space Grotesk';font-weight:700;font-size:19px;color:#fff;line-height:1.05}
+.brand-sub{font-size:11px;color:#6f8194;letter-spacing:.02em}
+.nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:#9fb0c2;font-weight:500;font-size:14px;transition:.14s;text-align:left;width:100%}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#e4ecf3}
+.nav-item.active{background:var(--ink-3);color:#fff}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+.nav-spacer{flex:1}
+.side-cta{margin-top:auto;display:flex;flex-direction:column;gap:9px;padding-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:10px;font-weight:600;font-size:14px;transition:.14s;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-d)}
+.btn-ghost-d{background:rgba(255,255,255,.06);color:#cdd9e4;border:1px solid rgba(255,255,255,.09)}
+.btn-ghost-d:hover{background:rgba(255,255,255,.1)}
+.btn-light{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.btn-light:hover{background:var(--surface-2)}
+.btn-sm{padding:7px 11px;font-size:12.5px;border-radius:9px}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{padding:22px 30px 6px;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.topbar h1{font-size:23px;color:var(--ink-2)}
+.content{padding:14px 30px 60px;flex:1}
+.disclaimer{font-size:11.5px;color:var(--faint);padding:10px 30px 24px;border-top:1px solid var(--line);background:var(--canvas)}
+
+/* ---------- Pipeline ---------- */
+.toolbar{display:flex;align-items:center;gap:12px;margin:10px 0 20px;flex-wrap:wrap}
+.search{flex:1;min-width:220px;max-width:420px;position:relative}
+.search input{width:100%;padding:11px 14px 11px 40px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--faint)}
+.board{display:flex;gap:16px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+.col{flex:0 0 286px;width:286px;display:flex;flex-direction:column}
+.col-head{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 12px}
+.col-title{font-family:'Space Grotesk';font-weight:600;font-size:14.5px;color:var(--ink-2)}
+.col-meta{font-size:11.5px;color:var(--faint);margin-top:2px}
+.col-count{min-width:24px;height:24px;padding:0 7px;border-radius:8px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--muted)}
+.col-body{display:flex;flex-direction:column;gap:11px;min-height:80px;border-radius:13px;padding:4px;transition:.12s}
+.col-body.drag-over{background:var(--blue-bg);outline:2px dashed #aac4f6;outline-offset:-3px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--shadow);cursor:grab;transition:.14s;position:relative}
+.card:hover{box-shadow:var(--shadow-l);transform:translateY(-1px);border-color:#c4cdd6}
+.card.dragging{opacity:.45}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.chip{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.02em}
+.chip-prio-Faible{background:#eef1f4;color:#6a7b8c}
+.chip-prio-Moyenne{background:var(--blue-bg);color:#3060c0}
+.chip-prio-Élevée{background:#fdeee6;color:#c0561f}
+.prob{font-size:12px;font-weight:600;color:var(--muted)}
+.card-name{font-family:'Space Grotesk';font-weight:600;font-size:15px;color:var(--ink-2);margin-bottom:2px;line-height:1.2}
+.card-sub{font-size:12px;color:var(--muted)}
+.card-loc{font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin:3px 0 11px}
+.card-loc svg{width:12px;height:12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.kpi{background:var(--surface-2);padding:8px 10px}
+.kpi-l{font-size:9.5px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;font-weight:600}
+.kpi-v{font-family:'IBM Plex Mono';font-weight:600;font-size:13.5px;color:var(--ink-2);margin-top:1px}
+.valo-badge{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-radius:10px;background:var(--brass-bg);border:1px solid #ecdcb4}
+.valo-badge .l{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brass-d)}
+.valo-badge .v{font-family:'IBM Plex Mono';font-weight:600;font-size:14px;color:var(--brass-d)}
+.card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:9px;border-top:1px solid var(--line-2)}
+.card-date{font-size:11.5px;color:var(--red);display:flex;align-items:center;gap:5px}
+.card-date svg{width:12px;height:12px}
+.card-actions{display:flex;gap:5px}
+.icon-btn{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line);background:var(--surface)}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn svg{width:14px;height:14px}
+
+/* ---------- Liste ---------- */
+.table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:13px 16px;border-bottom:1px solid var(--line-2);font-size:13.5px}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface-2);cursor:pointer}
+.td-name{font-weight:600;color:var(--ink-2)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+
+/* ---------- Stats ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.stat-l{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat-v{font-family:'IBM Plex Mono';font-weight:600;font-size:28px;color:var(--ink-2);margin-top:7px}
+.stat-sub{font-size:12px;color:var(--faint);margin-top:3px}
+.funnel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.funnel h3{font-size:16px;color:var(--ink-2);margin-bottom:16px}
+.funnel-row{display:flex;align-items:center;gap:14px;margin-bottom:11px}
+.funnel-label{width:160px;flex-shrink:0;font-size:13px;color:var(--muted)}
+.funnel-bar{flex:1;height:30px;background:var(--surface-2);border-radius:8px;overflow:hidden;position:relative}
+.funnel-fill{height:100%;background:linear-gradient(90deg,var(--blue),#5b8def);border-radius:8px;display:flex;align-items:center;padding:0 10px;color:#fff;font-size:12px;font-weight:600;min-width:34px}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(11,20,30,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:34px 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:18px;width:100%;max-width:980px;box-shadow:var(--shadow-l);overflow:hidden;animation:pop .18s ease}
+@keyframes pop{from{transform:translateY(10px) scale(.99);opacity:0}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 26px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:19px;color:var(--ink-2)}
+.modal-x{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
+.modal-x:hover{background:var(--surface-2)}
+.tabs{display:flex;gap:4px;padding:14px 22px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{padding:10px 16px;border-radius:9px 9px 0 0;font-weight:600;font-size:13.5px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-bg)}
+.modal-body{padding:24px 26px;max-height:64vh;overflow-y:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--line);background:var(--surface-2)}
+
+.section-title{font-family:'Space Grotesk';font-weight:600;font-size:15px;color:var(--blue-d);margin:4px 0 16px}
+.section-title.brass{color:var(--brass-d)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px}
+.field .hint{font-size:11.5px;color:var(--faint);margin-top:5px}
+.inp{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);transition:.12s}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.inp.num{text-align:right;font-family:'IBM Plex Mono'}
+.inp.readonly{background:var(--surface-2);color:var(--muted);text-align:right;font-family:'IBM Plex Mono';border-style:dashed}
+.inp.hl{background:var(--brass-bg);border-color:#e6d3a4}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px}
+.divider{height:1px;background:var(--line);margin:22px 0}
+.shareholders .row{display:grid;grid-template-columns:1fr 110px 36px;gap:10px;align-items:center;margin-bottom:8px}
+
+.calc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:6px}
+.calc{padding:2px}
+.calc-l{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.calc-formula{font-size:11px;color:var(--faint);margin-top:1px}
+.calc-v{font-family:'IBM Plex Mono';font-weight:600;font-size:21px;margin-top:6px;color:var(--ink-2)}
+.calc-v.green{color:var(--green)}
+.calc-v.red{color:var(--red)}
+
+.method{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border:1px solid var(--line);border-radius:12px;margin-bottom:11px;background:var(--surface)}
+.method.hl{background:var(--brass-bg);border-color:#e6d3a4}
+.method .m-name{font-weight:600;font-size:14.5px;color:var(--ink-2)}
+.method.hl .m-name{color:var(--brass-d)}
+.method .m-formula{font-size:11.5px;color:var(--faint);margin-top:3px;font-family:'IBM Plex Mono'}
+.method .m-val{font-family:'IBM Plex Mono';font-weight:600;font-size:18px;color:var(--ink-2);white-space:nowrap}
+.method.hl .m-val{color:var(--brass-d)}
+
+/* Verdict panel (signature) */
+.verdict{background:linear-gradient(160deg,var(--ink-2),var(--ink));border-radius:16px;padding:24px 26px;color:#dce4ec;margin-top:8px;box-shadow:0 14px 34px rgba(13,24,37,.25)}
+.verdict h3{color:#fff;font-size:16px;margin-bottom:4px}
+.verdict .vd-sub{font-size:12.5px;color:#8aa0b4;margin-bottom:22px}
+.gauge{position:relative;height:8px;background:rgba(255,255,255,.1);border-radius:6px;margin:38px 6px 10px}
+.gauge-fill{position:absolute;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,rgba(185,137,44,.35),var(--brass))}
+.gauge-pt{position:absolute;top:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-pt .dot{width:13px;height:13px;border-radius:50%;background:var(--brass);border:2px solid var(--ink-2);margin:0 auto}
+.gauge-pt.ask .dot{background:#fff}
+.gauge-pt .lab{font-size:9.5px;color:#8aa0b4;position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;top:-20px;text-transform:uppercase;letter-spacing:.03em}
+.gauge-pt .num{font-family:'IBM Plex Mono';font-size:11px;color:#cdd9e4;position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;top:16px}
+.verdict-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1)}
+.vd-cell .l{font-size:10.5px;color:#8aa0b4;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.vd-cell .v{font-family:'IBM Plex Mono';font-weight:600;font-size:22px;margin-top:5px;color:#fff}
+.vd-cell .v.brass{color:#e0b765}
+.vd-note{margin-top:18px;font-size:12.5px;color:#aebccb;line-height:1.55}
+.vd-note b{color:#fff}
+
+.ref-box{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-top:18px;font-size:12.5px;color:var(--muted)}
+.ref-box .rb-v{font-family:'IBM Plex Mono';font-weight:600;color:var(--ink-2)}
+
+/* Montage table */
+.mtable{width:100%;border-collapse:collapse;font-size:12.5px}
+.mtable th{padding:9px 8px;font-size:10px;background:var(--surface-2)}
+.mtable td{padding:8px;border-bottom:1px solid var(--line-2)}
+.mtable .src{font-weight:600;color:var(--ink-2);font-size:12.5px}
+.mtable input{width:100%;max-width:96px;padding:6px 8px;text-align:right;border:1px solid var(--line);border-radius:7px;font-family:'IBM Plex Mono';font-size:12px}
+.mtable .sug{color:var(--faint);font-size:11.5px;font-family:'IBM Plex Mono'}
+.mtable .tot td{background:#eef2fb;font-weight:600;border-top:2px solid #d4def5}
+.mono-cell{font-family:'IBM Plex Mono';text-align:right;color:var(--muted)}
+.feas{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.feas-card{border-radius:13px;padding:18px;border:1px solid}
+.feas-ok{background:var(--green-bg);border-color:#bfe5cd}
+.feas-no{background:var(--red-bg);border-color:#eecccc}
+.feas-card .fc-t{font-weight:600;font-size:14px;color:var(--ink-2);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.feas-card .fc-l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.feas-card .fc-v{font-family:'IBM Plex Mono';font-weight:600;font-size:20px;color:var(--ink-2);margin-top:3px}
+.verdict-pill{margin-top:14px;text-align:center;padding:11px;border-radius:10px;font-weight:700;font-size:15px}
+.verdict-pill.ok{background:rgba(28,138,85,.14);color:var(--green)}
+.verdict-pill.no{background:rgba(194,59,59,.14);color:var(--red)}
+
+/* Outils financiers */
+.subtabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;margin:6px 0 22px;box-shadow:var(--shadow)}
+.subtab{flex:1;text-align:center;padding:11px;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.subtab:hover{color:var(--text)}
+.subtab.active{background:var(--ink-2);color:#fff}
+.fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fin-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.fin-card h4{font-size:14px;color:var(--ink-2);margin-bottom:14px}
+.fin-card .mensual{font-size:12px;color:var(--faint);margin-top:12px;font-family:'IBM Plex Mono'}
+.result-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.result-card .rl{font-size:13px;color:var(--muted);font-weight:600}
+.result-card .rv{font-family:'IBM Plex Mono';font-weight:600;font-size:26px;color:var(--ink-2);margin-top:8px}
+.result-card .rs{font-size:11.5px;color:var(--faint);margin-top:5px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;margin-top:8px}
+.badge.ok{background:var(--green-bg);color:var(--green)}
+.badge.warn{background:var(--amber-bg);color:var(--amber)}
+.badge.bad{background:var(--red-bg);color:var(--red)}
+.ratio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.ratio{border-radius:13px;padding:16px;border:1px solid}
+.ratio.ok{background:var(--green-bg);border-color:#c4e6d2}
+.ratio.bad{background:var(--red-bg);border-color:#eecccc}
+.ratio .rt{font-weight:600;font-size:13px;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center}
+.ratio .rsub{font-size:11px;color:var(--muted);margin-top:2px}
+.ratio .rval{font-family:'IBM Plex Mono';font-weight:700;font-size:24px;margin:9px 0 3px;color:var(--ink-2)}
+.ratio .rcible{font-size:11px;color:var(--muted)}
+.scoreband{border-radius:16px;padding:26px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.scoreband .sl{font-size:15px;font-weight:600;opacity:.92}
+.scoreband .sv{font-family:'Space Grotesk';font-weight:700;font-size:46px;line-height:1;margin-top:4px}
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+.score-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px}
+.score-card .sc-t{font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center;gap:6px}
+.score-card .sc-w{font-size:10px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.score-card .sc-v{font-family:'IBM Plex Mono';font-weight:700;font-size:18px;border-radius:8px;padding:6px 10px;display:inline-block;margin:10px 0 6px}
+.score-card .sc-sub{font-size:11px;color:var(--faint)}
+.chart-wrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.year-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.year-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.year-card h5{font-size:13px;color:var(--ink-2);margin-bottom:8px}
+.year-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.year-row .yl{color:var(--muted)}
+.year-row .yv{font-family:'IBM Plex Mono';font-weight:600}
+
+/* Alfred IA */
+.alfred{max-width:760px;margin:0 auto}
+.alfred-hero{background:linear-gradient(150deg,var(--ink-2),var(--ink));border-radius:16px;padding:26px;color:#dce4ec;margin-bottom:18px;display:flex;gap:16px;align-items:center}
+.alfred-av{width:48px;height:48px;border-radius:13px;background:linear-gradient(150deg,var(--brass),var(--brass-d));display:grid;place-items:center;flex-shrink:0}
+.alfred-av svg{width:24px;height:24px;color:#fff}
+.alfred-bubble{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow);white-space:pre-wrap;line-height:1.6;font-size:14px;min-height:60px}
+.alfred-bubble.loading{color:var(--muted);font-style:italic}
+
+.empty{text-align:center;padding:60px 20px;color:var(--faint)}
+.empty svg{width:46px;height:46px;margin-bottom:14px;opacity:.5}
+
+@media(max-width:880px){
+  .sidebar{width:64px;padding:18px 8px}
+  .brand-name,.brand-sub,.nav-item span,.side-cta .btn span{display:none}
+  .nav-item{justify-content:center}
+  .side-cta .btn{padding:11px}
+  .grid-2,.grid-3,.calc-grid,.fin-grid,.ratio-grid,.score-grid,.year-grid,.feas,.verdict-row{grid-template-columns:1fr}
+  .ratio-grid{grid-template-columns:1fr 1fr}
+  .content,.topbar{padding-left:16px;padding-right:16px}
+}
+.lock{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#13212f,#0d1825);display:flex;align-items:center;justify-content:center;padding:20px}.lock.hidden{display:none}.lock-card{background:var(--surface);border-radius:18px;padding:36px 30px;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.45)}.lock-logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(150deg,var(--brass),var(--brass-d));display:grid;place-items:center;margin:0 auto 18px;color:#fff;box-shadow:0 8px 22px rgba(185,137,44,.4)}.lock-logo svg{width:28px;height:28px}.lock-card h2{font-size:21px;color:var(--ink-2);margin-bottom:8px}.lock-card p{font-size:13px;color:var(--muted);margin:8px 0 22px}#lock-input{width:100%;padding:14px;border:1px solid var(--line);border-radius:11px;text-align:center;font-size:18px;letter-spacing:4px;margin-bottom:14px;font-family:'IBM Plex Mono';}.lock-err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:10px}.lock-reset{margin-top:16px;font-size:11.5px;color:var(--faint);text-decoration:underline;cursor:pointer}.lock-reset:hover{color:var(--muted)}.app.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h2>Diaby Deals Flow</h2>
+    <p>Entrez votre code d'accès</p>
+    <input id="lock-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Code">
+    <button id="lock-btn" class="btn btn-primary">Déverrouiller</button>
+    <div id="lock-err" class="lock-err"></div>
+    <button id="lock-reset" class="lock-reset" type="button">Code oublié ?</button>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg></div>
+      <div><div class="brand-name">Diaby</div><div class="brand-sub">Deals Flow</div></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-cta">
+      <button class="btn btn-primary" onclick="openDeal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg><span>Nouveau deal</span></button>
+      <button class="btn btn-ghost-d" onclick="resetData()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg><span>Réinitialiser</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar"><h1 id="page-title">Pipeline d'acquisition</h1><div id="topbar-extra"></div></div>
+    <div class="content" id="content"></div>
+    <div class="disclaimer">Outil d'aide à la décision — les valorisations sont <b>indicatives</b> et reposent sur les hypothèses saisies. Elles ne remplacent ni un expert-comptable, ni un évaluateur, ni un conseil M&A. Vérifiez chaque chiffre sur les liasses fiscales réelles avant toute offre.</div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ============ LOCK SYSTEM ============ */
+const LOCK_PIN='201290';
+const LOCK_KEY='diaby_lock_pin';
+function initLock(){
+  const lock=document.getElementById('lock');
+  const input=document.getElementById('lock-input');
+  const btn=document.getElementById('lock-btn');
+  const err=document.getElementById('lock-err');
+  const reset=document.getElementById('lock-reset');
+  input.focus();
+  btn.addEventListener('click',()=>{
+    if(input.value===LOCK_PIN){
+      lock.classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      render();
+    }else{
+      err.textContent='Code incorrect.';
+      input.value='';
+      input.focus();
+    }
+  });
+  input.addEventListener('keypress',e=>{if(e.key==='Enter')btn.click();});
+  reset.addEventListener('click',()=>{
+    if(!confirm('Réinitialiser le code et effacer les données ?'))return;
+    localStorage.removeItem(KEY);
+    alert('Données effacées.');
+    location.reload();
+  });
+}
+/* ============ END LOCK SYSTEM ============ */
+
+/* ============================================================
+   AcquiFlow Pro — moteur complet (vanilla JS)
+   ============================================================ */
+const STAGES=[
+  {id:'sourcing',label:'Sourcing'},
+  {id:'rdv_tel',label:'RDV téléphonique'},
+  {id:'bilans',label:'Bilans reçus'},
+  {id:'rdv_phys',label:'RDV physique'},
+  {id:'nego',label:'En négociation'},
+  {id:'loi',label:'LOI signée'},
+];
+const PRIORITES=['Faible','Moyenne','Élevée'];
+const SECTEURS=['Transport routier','Transport / VTC','Logiciel / SaaS','BTP / Bâtiment','Industrie / Usinage','Commerce / Distribution','Services BtoB','Restauration / CHR','Événementiel','Matériel informatique','Autre'];
+// [low, mid, high] multiple EV/EBE + caPct (EV/CA)
+const SECTOR={
+  'Transport routier':{m:[3,4,5],ca:0.5},
+  'Transport / VTC':{m:[2.5,3.5,4.5],ca:0.5},
+  'Logiciel / SaaS':{m:[5,7,10],ca:2.0},
+  'BTP / Bâtiment':{m:[3,4,5],ca:0.5},
+  'Industrie / Usinage':{m:[4,5.5,7],ca:0.7},
+  'Commerce / Distribution':{m:[3,4.5,6],ca:0.4},
+  'Services BtoB':{m:[4,6,8],ca:0.9},
+  'Restauration / CHR':{m:[2,3,4],ca:0.5},
+  'Événementiel':{m:[3,4,5],ca:0.6},
+  'Matériel informatique':{m:[3,4.5,6],ca:0.5},
+  'Autre':{m:[3,4,5],ca:0.6},
+};
+
+/* ---------- helpers ---------- */
+const N=v=>{const n=parseFloat(v);return isFinite(n)?n:0;};
+const fmtEur=v=>Math.round(N(v)).toLocaleString('fr-FR')+' €';
+const fmtK=v=>{const k=N(v)/1000;return k.toLocaleString('fr-FR',{maximumFractionDigits:1})+' k€';};
+const fmtK0=v=>Math.round(N(v)/1000).toLocaleString('fr-FR')+' k€';
+const fmtBig=v=>{const a=Math.abs(N(v));if(a>=1e6)return (N(v)/1e6).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' M€';return fmtK(v);};
+const fmtX=v=>(isFinite(v)?v.toLocaleString('fr-FR',{maximumFractionDigits:2}):'∞')+'x';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>'d'+Math.random().toString(36).slice(2,9);
+function annuity(principal,years,ratePct){principal=N(principal);years=N(years)||1;const r=N(ratePct)/100;if(r<=0)return principal/years;return principal*r/(1-Math.pow(1+r,-years));}
+function avg(arr){const f=arr.map(N).filter(x=>x!==0);if(!f.length)return 0;return f.reduce((a,b)=>a+b,0)/f.length;}
+
+/* ---------- default deal ---------- */
+function blankDeal(){return{
+  id:uid(),name:'',sector:'Autre',location:'',siret:'',adresse:'',
+  shareholders:[],
+  caN1:0,caN2:0,caN3:0, ebeN1:0,ebeN2:0,ebeN3:0, rnN1:0,rnN2:0,rnN3:0,
+  ebeRetraite:0, dotations:0,
+  creances:0,stock:0,dettesFournisseurs:0,
+  capitauxPropres:0,capitalSocial:0,valeurActifs:0,tresorerie:0,dettesFinancieres:0,
+  prixDemande:0,prixCible:0,
+  multMid:0,caPct:0,cafCoef:4,capRate:18,
+  // financement
+  cvMontant:0,cvDuree:5,cvTaux:0, bpiMontant:0,bpiDuree:4,bpiTaux:5,
+  ptMontant:0,ptDuree:4,ptTaux:8, autMontant:0,autDuree:7,autTaux:7,
+  gapMontant:0,gapDuree:3,gapTaux:0, apportMontant:0, eoMontant:0,eoDuree:4,
+  croissance:5,
+  stage:'sourcing',priorite:'Moyenne',probabilite:10,
+  prochaineAction:'',dateProchaineAction:'',source:'',notes:'',
+  createdAt:Date.now()
+};}
+
+/* ---------- seed ---------- */
+function seedDeals(){
+  const mk=(o)=>Object.assign(blankDeal(),o);
+  return[
+    mk({name:'Deal exemple N°1',sector:'Industrie / Usinage',location:'Quimper (29)',siret:'259562369',adresse:'12 rue de la Paix, 51000 Quimper',
+        shareholders:[{nom:'Mr Durand',pct:100}],
+        caN1:2500000,caN2:2400000,caN3:2300000, ebeN1:250000,ebeN2:230000,ebeN3:200000,
+        rnN1:190000,rnN2:180000,rnN3:180000, ebeRetraite:341700, dotations:55000,
+        creances:560000,stock:56000,dettesFournisseurs:270000,
+        capitauxPropres:890000,capitalSocial:10000,valeurActifs:800000,tresorerie:650000,dettesFinancieres:0,
+        prixDemande:750000,prixCible:700000,gapMontant:96000,
+        stage:'bilans',priorite:'Moyenne',probabilite:25,prochaineAction:'rdv physique',dateProchaineAction:'2026-02-06',
+        source:'deal offmarket',notes:'attention cédant profil rouge / autoritaire'}),
+    mk({name:'sas digitech',sector:'Logiciel / SaaS',location:'IDF (75)',
+        caN1:1200000,caN2:1050000,caN3:900000, ebeN1:250000,ebeN2:210000,ebeN3:170000, rnN1:160000,rnN2:130000,rnN3:100000,
+        ebeRetraite:280000,dotations:30000, creances:280000,capitauxPropres:340000,tresorerie:120000,dettesFinancieres:90000,
+        prixDemande:1200000,prixCible:1000000, stage:'rdv_phys',priorite:'Élevée',probabilite:40,dateProchaineAction:'2026-06-24'}),
+    mk({name:'Construction Idéale 69',sector:'BTP / Bâtiment',location:'Rhône-Alpes (69)',
+        caN1:1100000,caN2:1000000,caN3:950000, ebeN1:250000,ebeN2:220000,ebeN3:210000, rnN1:150000,rnN2:130000,rnN3:120000,
+        ebeRetraite:265000,dotations:40000, creances:256000,capitauxPropres:365000,valeurActifs:25000,tresorerie:90000,dettesFinancieres:60000,
+        prixDemande:900000,prixCible:780000, stage:'rdv_phys',priorite:'Moyenne',probabilite:40}),
+    mk({name:'Tech Solutions',sector:'Logiciel / SaaS',location:'Occitanie (34)',
+        caN1:369000,caN2:320000,caN3:280000, ebeN1:34000,ebeN2:28000,ebeN3:22000, rnN1:20000,rnN2:15000,rnN3:11000,
+        ebeRetraite:48000,dotations:8000, creances:350000,capitauxPropres:450000,tresorerie:60000,dettesFinancieres:40000,
+        prixDemande:300000,prixCible:240000, stage:'bilans',priorite:'Moyenne',probabilite:25}),
+    mk({name:'Excel Company',sector:'Logiciel / SaaS',location:'IDF (75)',
+        caN1:4560000,caN2:4200000,caN3:3900000, ebeN1:553000,ebeN2:500000,ebeN3:460000, rnN1:380000,rnN2:340000,rnN3:300000,
+        ebeRetraite:620000,dotations:90000, creances:856000,capitauxPropres:1589000,tresorerie:420000,dettesFinancieres:210000,
+        prixDemande:3200000,prixCible:2800000, stage:'rdv_tel',priorite:'Moyenne',probabilite:10}),
+    mk({name:'ORDINATEUR COMPANY',sector:'Matériel informatique',location:'Occitanie (34)',
+        caN1:5400000,caN2:5000000,caN3:4700000, ebeN1:600000,ebeN2:540000,ebeN3:500000, rnN1:400000,rnN2:360000,rnN3:320000,
+        ebeRetraite:700000,dotations:120000, creances:250000,capitauxPropres:850000,valeurActifs:52000,tresorerie:300000,dettesFinancieres:180000,
+        prixDemande:2400000,prixCible:2100000, stage:'loi',priorite:'Élevée',probabilite:80,dateProchaineAction:'2026-07-12'}),
+  ];
+}
+
+/* ---------- state + storage ---------- */
+let state={view:'pipeline',deals:[],search:'',finDealId:null,finTab:'sim',
+  modal:{open:false,dealId:null,tab:'fiche'}};
+const KEY='acquiflow_pro_deals_v1';
+let memFallback=null;
+async function loadDeals(){
+  try{ if(window.storage){const r=await window.storage.get(KEY);if(r&&r.value){return JSON.parse(r.value);}} }catch(e){}
+  if(memFallback)return memFallback;
+  return null;
+}
+let saveTimer=null;
+function saveDeals(){
+  memFallback=state.deals;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    try{ if(window.storage){await window.storage.set(KEY,JSON.stringify(state.deals),false);} }catch(e){}
+  },350);
+}
+function getDeal(id){return state.deals.find(d=>d.id===id);}
+
+/* ============================================================
+   COMPUTE — the valuation & financing engine
+   ============================================================ */
+function compute(d){
+  const sec=SECTOR[d.sector]||SECTOR['Autre'];
+  const multMid=N(d.multMid)||sec.m[1];
+  const multLow=Math.max(1,multMid-1), multHigh=multMid+1.5;
+  const caPct=N(d.caPct)||sec.ca;
+
+  const ebeMoyen=avg([d.ebeN1,d.ebeN2,d.ebeN3]);
+  const rnMoyen=avg([d.rnN1,d.rnN2,d.rnN3]);
+  const caMoyen=avg([d.caN1,d.caN2,d.caN3]);
+  const ebeRetraite=N(d.ebeRetraite)||ebeMoyen||N(d.ebeN1);
+  const caLast=N(d.caN1)||caMoyen;
+  const caf=(N(d.rnN1)||rnMoyen)+N(d.dotations);
+
+  const treso=N(d.tresorerie), dettesFin=N(d.dettesFinancieres);
+  const detteNette=dettesFin-treso;
+  const bridge=treso-dettesFin; // + cash net to go EV->equity
+
+  // BFR
+  const bfr=N(d.creances)+N(d.stock)-N(d.dettesFournisseurs);
+  const tresoExced=treso-bfr;
+  const tresoNette=treso-dettesFin;
+
+  // Methods (equity / valeur des titres)
+  const eqEbeRetr=ebeRetraite*multMid+bridge;
+  const eqEbeRetrLow=ebeRetraite*multLow+bridge;
+  const eqEbeRetrHigh=ebeRetraite*multHigh+bridge;
+  const eqEbeMoyen=ebeMoyen*multMid+bridge;
+  const eqRnMoyen=rnMoyen*multMid+bridge;
+  const eqCA=caLast*caPct+bridge;
+  const eqCAF=caf*N(d.cafCoef);
+  const eqANCC=N(d.capitauxPropres);
+  const capRate=N(d.capRate)||18;
+  const eqCapit=rnMoyen>0?rnMoyen/(capRate/100):0;
+
+  // weighted central
+  const parts=[
+    {v:eqEbeRetr,w:0.40,ok:ebeRetraite>0},
+    {v:eqCAF,w:0.20,ok:caf>0},
+    {v:eqANCC,w:0.15,ok:eqANCC>0},
+    {v:eqCapit,w:0.15,ok:rnMoyen>0},
+    {v:eqCA,w:0.10,ok:caLast>0},
+  ].filter(p=>p.ok);
+  const wsum=parts.reduce((a,p)=>a+p.w,0)||1;
+  const central=parts.reduce((a,p)=>a+p.v*p.w,0)/wsum;
+  let low=Math.min(eqEbeRetrLow,central*0.85);
+  let high=Math.max(eqEbeRetrHigh,central*1.15);
+  low=Math.max(0,low); high=Math.max(high,central);
+  const ouverture=Math.max(0,Math.min(low,central*0.9));
+
+  // AcquiFlow naive reference
+  const naive=3*N(d.ebeN1)+treso-dettesFin;
+
+  // ---- Montage / financing ----
+  const debts=[
+    {amt:N(d.cvMontant),yrs:N(d.cvDuree),rate:N(d.cvTaux)},
+    {amt:N(d.bpiMontant),yrs:N(d.bpiDuree),rate:N(d.bpiTaux)},
+    {amt:N(d.ptMontant),yrs:N(d.ptDuree),rate:N(d.ptTaux)},
+    {amt:N(d.autMontant),yrs:N(d.autDuree),rate:N(d.autTaux)},
+    {amt:N(d.gapMontant),yrs:N(d.gapDuree),rate:N(d.gapTaux)},
+  ];
+  const detteTotale=debts.reduce((a,x)=>a+x.amt,0);
+  const serviceDette=debts.reduce((a,x)=>a+(x.amt>0?annuity(x.amt,x.yrs,x.rate):0),0);
+  const interets1=debts.reduce((a,x)=>a+x.amt*x.rate/100,0);
+  const mensualite=serviceDette/12;
+  const apport=N(d.apportMontant);
+  const prixNego=N(d.prixCible)||central;
+  const totalFin=detteTotale+apport+tresoExced+N(d.eoMontant);
+  const excedentFin=totalFin-prixNego;
+  const fcfApresDette=ebeRetraite-serviceDette;
+
+  // feasibility (50% EBE rule)
+  const seuil=0.5*ebeRetraite;
+  const coutAnnuelMax=serviceDette;
+  const feasible=coutAnnuelMax>0?coutAnnuelMax<=seuil:true;
+  const ebeEarnout=ebeRetraite*1.10;
+  const seuilEO=0.5*ebeEarnout;
+  const feasibleEO=coutAnnuelMax<=seuilEO;
+
+  // ratios
+  const dscr=serviceDette>0?ebeRetraite/serviceDette:Infinity;
+  const leverage=ebeRetraite>0?detteTotale/ebeRetraite:0;
+  const netLeverage=ebeRetraite>0?(detteTotale-treso)/ebeRetraite:0;
+  const icr=interets1>0?ebeRetraite/interets1:Infinity;
+  const apportPrix=prixNego>0?apport/prixNego:0;
+  const detteFP=N(d.capitauxPropres)>0?detteTotale/N(d.capitauxPropres):0;
+  const fcfYield=detteTotale>0?fcfApresDette/detteTotale:Infinity;
+  const cvPrix=prixNego>0?N(d.cvMontant)/prixNego:0;
+
+  return {multMid,multLow,multHigh,caPct,ebeMoyen,rnMoyen,caMoyen,ebeRetraite,caLast,caf,
+    treso,dettesFin,detteNette,bridge,bfr,tresoExced,tresoNette,
+    eqEbeRetr,eqEbeRetrLow,eqEbeRetrHigh,eqEbeMoyen,eqRnMoyen,eqCA,eqCAF,eqANCC,eqCapit,capRate,
+    central,low,high,ouverture,naive,
+    detteTotale,serviceDette,interets1,mensualite,apport,prixNego,totalFin,excedentFin,fcfApresDette,
+    seuil,coutAnnuelMax,feasible,ebeEarnout,seuilEO,feasibleEO,
+    dscr,leverage,netLeverage,icr,apportPrix,detteFP,fcfYield,cvPrix};
+}
+
+/* ============================================================
+   RENDER — shell
+   ============================================================ */
+const NAV=[
+  {id:'pipeline',label:'Pipeline',icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'},
+  {id:'liste',label:'Liste',icon:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'},
+  {id:'stats',label:'Statistiques',icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'},
+  {id:'simulateur',label:'Outils financiers',icon:'<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/>'},
+  {id:'alfred',label:'Alfred IA',icon:'<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V5M9 3h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/>'},
+];
+function renderNav(){
+  document.getElementById('nav').innerHTML=NAV.map(n=>`
+    <button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${n.icon}</svg><span>${n.label}</span>
+    </button>`).join('');
+}
+function go(v){state.view=v;render();}
+function render(){
+  renderNav();
+  const titles={pipeline:"Pipeline d'acquisition",liste:'Liste des deals',stats:'Statistiques',simulateur:'Outils financiers',alfred:'Alfred — Analyste IA'};
+  document.getElementById('page-title').textContent=titles[state.view]||'';
+  document.getElementById('topbar-extra').innerHTML='';
+  const c=document.getElementById('content');
+  if(state.view==='pipeline')renderPipeline(c);
+  else if(state.view==='liste')renderListe(c);
+  else if(state.view==='stats')renderStats(c);
+  else if(state.view==='simulateur')renderSimulateur(c);
+  else if(state.view==='alfred')renderAlfred(c);
+}
+
+/* ---------- Pipeline ---------- */
+function renderPipeline(c){
+  const q=state.search.toLowerCase();
+  c.innerHTML=`
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input placeholder="Rechercher un deal, un secteur…" value="${esc(state.search)}" oninput="state.search=this.value;renderPipeline(document.getElementById('content'))">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openDeal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg> Nouveau deal</button>
+  </div>
+  <div class="board" id="board"></div>`;
+  const board=document.getElementById('board');
+  board.innerHTML=STAGES.map(st=>{
+    const deals=state.deals.filter(d=>d.stage===st.id && (!q||d.name.toLowerCase().includes(q)||(d.sector||'').toLowerCase().includes(q)||(d.location||'').toLowerCase().includes(q)));
+    const target=deals.reduce((a,d)=>a+N(d.prixCible||d.prixDemande),0);
+    return `<div class="col">
+      <div class="col-head">
+        <div><div class="col-title">${st.label}</div><div class="col-meta">${fmtK0(target)} cible</div></div>
+        <div class="col-count">${deals.length}</div>
+      </div>
+      <div class="col-body" data-stage="${st.id}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'${st.id}')">
+        ${deals.map(cardHTML).join('')||'<div style="font-size:12px;color:var(--faint);text-align:center;padding:20px 0">—</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+function cardHTML(d){
+  const m=compute(d);
+  const dt=d.dateProchaineAction?new Date(d.dateProchaineAction).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
+  return `<div class="card" draggable="true" data-id="${d.id}" ondragstart="dragStart(event,'${d.id}')" ondragend="dragEnd(event)" onclick="openDeal('${d.id}')">
+    <div class="card-top">
+      <span class="chip chip-prio-${d.priorite}">${d.priorite}</span>
+      <span class="prob">${N(d.probabilite)}%</span>
+    </div>
+    <div class="card-name">${esc(d.name||'Sans nom')}</div>
+    <div class="card-sub">${esc(d.sector)}</div>
+    ${d.location?`<div class="card-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${esc(d.location)}</div>`:'<div style="height:8px"></div>'}
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-l">CA</div><div class="kpi-v">${fmtK0(d.caN1)}</div></div>
+      <div class="kpi"><div class="kpi-l">EBE</div><div class="kpi-v">${fmtK0(d.ebeN1)}</div></div>
+      <div class="kpi"><div class="kpi-l">Créances</div><div class="kpi-v">${fmtK0(d.creances)}</div></div>
+      <div class="kpi"><div class="kpi-l">Capitaux</div><div class="kpi-v">${fmtK0(d.capitauxPropres)}</div></div>
+    </div>
+    <div class="valo-badge">
+      <span class="l">Valeur estimée</span>
+      <span class="v">${fmtBig(m.central)}</span>
+    </div>
+    <div class="card-foot">
+      ${dt?`<span class="card-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${dt}</span>`:'<span style="font-size:11.5px;color:var(--faint)">Prix demandé '+fmtK0(d.prixDemande)+'</span>'}
+      <div class="card-actions">
+        <button class="icon-btn" title="Analyser" onclick="event.stopPropagation();openDeal('${d.id}','valo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>
+        <button class="icon-btn" title="Supprimer" onclick="event.stopPropagation();delDeal('${d.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+      </div>
+    </div>
+  </div>`;
+}
+/* drag & drop */
+let dragId=null;
+function dragStart(e,id){dragId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.col-body').forEach(b=>b.classList.remove('drag-over'));}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function drop(e,stage){e.preventDefault();const d=getDeal(dragId);if(d){d.stage=stage;saveDeals();}dragId=null;renderPipeline(document.getElementById('content'));}
+
+/* ---------- Liste ---------- */
+function renderListe(c){
+  const rows=state.deals.map(d=>{const m=compute(d);const st=STAGES.find(s=>s.id===d.stage);
+    return `<tr onclick="openDeal('${d.id}')">
+      <td class="td-name">${esc(d.name||'—')}</td>
+      <td><span class="tag">${esc(d.sector)}</span></td>
+      <td>${esc(st?st.label:'')}</td>
+      <td class="mono">${fmtK0(d.caN1)}</td>
+      <td class="mono">${fmtK0(d.ebeN1)}</td>
+      <td class="mono">${fmtK0(d.prixDemande)}</td>
+      <td class="mono" style="color:var(--brass-d);font-weight:600">${fmtBig(m.central)}</td>
+      <td>${N(d.probabilite)}%</td>
+    </tr>`;}).join('');
+  c.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Société</th><th>Secteur</th><th>Étape</th><th>CA</th><th>EBE</th><th>Prix demandé</th><th>Valeur estimée</th><th>Prob.</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="8" style="text-align:center;color:var(--faint);padding:40px">Aucun deal</td></tr>'}</tbody>
+  </table></div>`;
+}
+
+/* ---------- Stats ---------- */
+function renderStats(c){
+  const total=state.deals.length;
+  const valTotal=state.deals.reduce((a,d)=>a+compute(d).central,0);
+  const pondere=state.deals.reduce((a,d)=>a+compute(d).central*N(d.probabilite)/100,0);
+  const askTotal=state.deals.reduce((a,d)=>a+N(d.prixDemande),0);
+  const max=Math.max(1,...STAGES.map(st=>state.deals.filter(d=>d.stage===st.id).length));
+  c.innerHTML=`
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-l">Deals actifs</div><div class="stat-v">${total}</div><div class="stat-sub">dans le pipeline</div></div>
+    <div class="stat-card"><div class="stat-l">Valeur estimée totale</div><div class="stat-v">${fmtBig(valTotal)}</div><div class="stat-sub">somme des valorisations</div></div>
+    <div class="stat-card"><div class="stat-l">Pipeline pondéré</div><div class="stat-v">${fmtBig(pondere)}</div><div class="stat-sub">× probabilité de closing</div></div>
+    <div class="stat-card"><div class="stat-l">Prix demandés cumulés</div><div class="stat-v">${fmtBig(askTotal)}</div><div class="stat-sub">total vendeurs</div></div>
+  </div>
+  <div class="funnel"><h3>Répartition par étape</h3>
+    ${STAGES.map(st=>{const n=state.deals.filter(d=>d.stage===st.id).length;const pct=Math.round(n/max*100);
+      return `<div class="funnel-row"><div class="funnel-label">${st.label}</div><div class="funnel-bar"><div class="funnel-fill" style="width:${Math.max(pct,n?8:0)}%">${n||''}</div></div></div>`;}).join('')}
+  </div>`;
+}
+
+/* ============================================================
+   DEAL MODAL (Fiche + 4 onglets d'analyse)
+   ============================================================ */
+function openDeal(id,tab){
+  let d;
+  if(id){d=getDeal(id);}else{d=blankDeal();state.deals.push(d);saveDeals();}
+  state.modal={open:true,dealId:d.id,tab:tab||'fiche'};
+  document.getElementById('overlay').classList.add('open');
+  renderModal();
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');state.modal.open=false;render();}
+document.getElementById('overlay').addEventListener('mousedown',e=>{if(e.target.id==='overlay')closeModal();});
+
+const MODAL_TABS=[
+  {id:'fiche',label:'Fiche'},
+  {id:'pl',label:'Historique P&L'},
+  {id:'bilan',label:'Bilan & BFR'},
+  {id:'valo',label:'Valorisation'},
+  {id:'montage',label:'Montage'},
+];
+function renderModal(){
+  const d=getDeal(state.modal.dealId); if(!d)return;
+  const m=document.getElementById('modal');
+  m.innerHTML=`
+    <div class="modal-head"><h2>${d.name?esc(d.name):'Nouveau deal'}</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="tabs">${MODAL_TABS.map(t=>`<button class="tab ${state.modal.tab===t.id?'active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('')}</div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-light btn-sm" onclick="closeModal()">Fermer</button>
+      <button class="btn btn-primary btn-sm" onclick="saveDeals();closeModal()">Enregistrer</button>
+    </div>`;
+  renderModalBody();
+}
+function switchTab(t){state.modal.tab=t;renderModalBody();document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
+function bind(id,field,opts){ // attach input -> deal + recompute
+  const el=document.getElementById(id); if(!el)return;
+  el.addEventListener('input',()=>{
+    const d=getDeal(state.modal.dealId);
+    let v=el.value;
+    if(opts&&opts.num)v=el.value;
+    d[field]=v; saveDeals(); recalcModal();
+  });
+}
+function renderModalBody(){
+  const t=state.modal.tab;
+  if(t==='fiche')bodyFiche();
+  else if(t==='pl')bodyPL();
+  else if(t==='bilan')bodyBilan();
+  else if(t==='valo')bodyValo();
+  else if(t==='montage')bodyMontage();
+}
+function recalcModal(){ // refresh computed outputs of current tab without rebuilding inputs
+  const t=state.modal.tab;
+  if(t==='pl')refreshPL();
+  else if(t==='bilan')refreshBilan();
+  else if(t==='valo')bodyValo();      // valo re-renders fully (mostly outputs)
+  else if(t==='montage')refreshMontage();
+}
+
+/* ---- Fiche ---- */
+function bodyFiche(){
+  const d=getDeal(state.modal.dealId);
+  document.getElementById('modal-body').innerHTML=`
+    <div class="section-title">Identité & entreprise</div>
+    <div class="grid-2">
+      <div class="field"><label>Nom de la société</label><input class="inp" id="f_name" value="${esc(d.name)}"></div>
+      <div class="field"><label>Secteur</label><select class="inp" id="f_sector">${SECTEURS.map(s=>`<option ${d.sector===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Localisation</label><input class="inp" id="f_loc" value="${esc(d.location)}" placeholder="Ville (dpt)"></div>
+      <div class="field"><label>SIRET</label><input class="inp" id="f_siret" value="${esc(d.siret)}" placeholder="123 456 789 00012"></div>
+    </div>
+    <div class="field"><label>Adresse postale</label><input class="inp" id="f_adr" value="${esc(d.adresse)}"></div>
+    <div class="field"><label>Actionnaires</label><div class="shareholders" id="sh-list"></div>
+      <button class="btn btn-light btn-sm" style="margin-top:6px" onclick="addSH()">+ Ajouter un actionnaire</button></div>
+    <div class="divider"></div>
+    <div class="section-title">Prix annoncés</div>
+    <div class="grid-2">
+      <div class="field"><label>Prix demandé (€)</label><input class="inp num" id="f_pd" type="number" value="${N(d.prixDemande)}"></div>
+      <div class="field"><label>Prix cible / négocié (€)</label><input class="inp num" id="f_pc" type="number" value="${N(d.prixCible)}"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Suivi commercial</div>
+    <div class="grid-2">
+      <div class="field"><label>Étape</label><select class="inp" id="f_stage">${STAGES.map(s=>`<option value="${s.id}" ${d.stage===s.id?'selected':''}>${s.label}</option>`).join('')}</select></div>
+      <div class="field"><label>Priorité</label><select class="inp" id="f_prio">${PRIORITES.map(p=>`<option ${d.priorite===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      <div class="field"><label>Probabilité de closing (%)</label><input class="inp num" id="f_prob" type="number" value="${N(d.probabilite)}"></div>
+      <div class="field"><label>Source</label><input class="inp" id="f_src" value="${esc(d.source)}" placeholder="off-market, broker…"></div>
+      <div class="field"><label>Prochaine action</label><input class="inp" id="f_pa" value="${esc(d.prochaineAction)}"></div>
+      <div class="field"><label>Date prochaine action</label><input class="inp" id="f_pad" type="date" value="${esc(d.dateProchaineAction)}"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea class="inp" id="f_notes" rows="3">${esc(d.notes)}</textarea></div>
+  `;
+  bind('f_name','name');bind('f_loc','location');bind('f_siret','siret');bind('f_adr','adresse');
+  bind('f_pd','prixDemande');bind('f_pc','prixCible');bind('f_prob','probabilite');
+  bind('f_src','source');bind('f_pa','prochaineAction');bind('f_pad','dateProchaineAction');bind('f_notes','notes');
+  document.getElementById('f_sector').addEventListener('change',e=>{getDeal(state.modal.dealId).sector=e.target.value;saveDeals();});
+  document.getElementById('f_stage').addEventListener('change',e=>{getDeal(state.modal.dealId).stage=e.target.value;saveDeals();});
+  document.getElementById('f_prio').addEventListener('change',e=>{getDeal(state.modal.dealId).priorite=e.target.value;saveDeals();});
+  renderSH();
+}
+function renderSH(){
+  const d=getDeal(state.modal.dealId);
+  document.getElementById('sh-list').innerHTML=d.shareholders.map((s,i)=>`
+    <div class="row">
+      <input class="inp" placeholder="Nom" value="${esc(s.nom)}" oninput="shSet(${i},'nom',this.value)">
+      <input class="inp num" type="number" placeholder="%" value="${N(s.pct)}" oninput="shSet(${i},'pct',this.value)">
+      <button class="icon-btn" onclick="shDel(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m-1 0v14H9V6"/></svg></button>
+    </div>`).join('')||'<div style="font-size:12px;color:var(--faint)">Aucun actionnaire</div>';
+}
+function addSH(){getDeal(state.modal.dealId).shareholders.push({nom:'',pct:0});saveDeals();renderSH();}
+function shSet(i,k,v){getDeal(state.modal.dealId).shareholders[i][k]=v;saveDeals();}
+function shDel(i){getDeal(state.modal.dealId).shareholders.splice(i,1);saveDeals();renderSH();}
+
+/* ---- Historique P&L ---- */
+function bodyPL(){
+  const d=getDeal(state.modal.dealId);
+  document.getElementById('modal-body').innerHTML=`
+    <div class="section-title">Compte de résultat historique (3 ans)</div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="background:none;border:none"></th>
+        <th style="text-align:center;background:none;border:none;color:var(--muted)">N-1</th>
+        <th style="text-align:center;background:none;border:none;color:var(--muted)">N-2</th>
+        <th style="text-align:center;background:none;border:none;color:var(--muted)">N-3</th></tr></thead>
+      <tbody>
+        ${plRow('Chiffre d\'affaires (€)','ca',d)}
+        ${plRow('EBE / EBITDA (€)','ebe',d)}
+        ${plRow('Résultat net (€)','rn',d)}
+      </tbody>
+    </table>
+    <div class="field" style="margin-top:18px"><label>EBE retraité (€)</label>
+      <input class="inp num hl" id="pl_ebeR" type="number" value="${N(d.ebeRetraite)}">
+      <div class="hint">EBE ajusté des éléments non récurrents (rémunération dirigeant normalisée, loyers anormaux, charges perso…). C'est l'indicateur clé de la valorisation.</div></div>
+    <div class="field"><label>Dotations aux amortissements (€)</label><input class="inp num" id="pl_dot" type="number" value="${N(d.dotations)}"><div class="hint">Sert au calcul de la CAF (Résultat net + dotations).</div></div>
+    <div class="divider"></div>
+    <div class="section-title">Moyennes 3 ans</div>
+    <div class="calc-grid">
+      <div class="calc"><div class="calc-l">EBE moyen</div><div class="calc-v" id="pl_ebeMoy"></div></div>
+      <div class="calc"><div class="calc-l">Résultat net moyen</div><div class="calc-v" id="pl_rnMoy"></div></div>
+      <div class="calc"><div class="calc-l">CAF estimée (N-1)</div><div class="calc-v" id="pl_caf"></div></div>
+    </div>`;
+  ['ca','ebe','rn'].forEach(k=>['N1','N2','N3'].forEach(y=>bind('pl_'+k+y,k+y)));
+  bind('pl_ebeR','ebeRetraite');bind('pl_dot','dotations');
+  refreshPL();
+}
+function plRow(label,key,d){
+  return `<tr><td style="font-weight:600;color:var(--text);border-bottom:1px solid var(--line-2)">${label}</td>
+    ${['N1','N2','N3'].map(y=>`<td style="border-bottom:1px solid var(--line-2);padding:6px 8px"><input class="inp num" id="pl_${key}${y}" type="number" value="${N(d[key+y])}"></td>`).join('')}</tr>`;
+}
+function refreshPL(){const m=compute(getDeal(state.modal.dealId));
+  set('pl_ebeMoy',fmtK(m.ebeMoyen));set('pl_rnMoy',fmtK(m.rnMoyen));set('pl_caf',fmtK(m.caf));}
+function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+
+/* ---- Bilan & BFR ---- */
+function bodyBilan(){
+  const d=getDeal(state.modal.dealId);
+  document.getElementById('modal-body').innerHTML=`
+    <div class="section-title">Éléments du bilan</div>
+    <div class="grid-2">
+      <div class="field"><label>Créances clients (€)</label><input class="inp num" id="b_cre" type="number" value="${N(d.creances)}"></div>
+      <div class="field"><label>Stock (€)</label><input class="inp num" id="b_stk" type="number" value="${N(d.stock)}"></div>
+      <div class="field"><label>Dettes fournisseurs (€)</label><input class="inp num" id="b_four" type="number" value="${N(d.dettesFournisseurs)}"></div>
+      <div class="field"><label>Trésorerie (€)</label><input class="inp num" id="b_tre" type="number" value="${N(d.tresorerie)}"></div>
+      <div class="field"><label>Dettes financières (€)</label><input class="inp num" id="b_det" type="number" value="${N(d.dettesFinancieres)}"></div>
+      <div class="field"><label>Capitaux propres (€)</label><input class="inp num" id="b_cp" type="number" value="${N(d.capitauxPropres)}"></div>
+      <div class="field"><label>Capital social (€)</label><input class="inp num" id="b_cs" type="number" value="${N(d.capitalSocial)}"></div>
+      <div class="field"><label>Valeur des actifs (€)</label><input class="inp num" id="b_act" type="number" value="${N(d.valeurActifs)}"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Calculs automatiques</div>
+    <div class="calc-grid">
+      <div class="calc"><div class="calc-l">BFR</div><div class="calc-formula">Créances + Stock − Dettes fourn.</div><div class="calc-v" id="b_bfr"></div></div>
+      <div class="calc"><div class="calc-l">Trésorerie excédentaire</div><div class="calc-formula">Trésorerie − BFR</div><div class="calc-v" id="b_texc"></div></div>
+      <div class="calc"><div class="calc-l">Trésorerie nette</div><div class="calc-formula">Trésorerie − Dettes fin.</div><div class="calc-v" id="b_tnet"></div></div>
+    </div>`;
+  bind('b_cre','creances');bind('b_stk','stock');bind('b_four','dettesFournisseurs');
+  bind('b_tre','tresorerie');bind('b_det','dettesFinancieres');bind('b_cp','capitauxPropres');
+  bind('b_cs','capitalSocial');bind('b_act','valeurActifs');
+  refreshBilan();
+}
+function refreshBilan(){const m=compute(getDeal(state.modal.dealId));
+  set('b_bfr',fmtK(m.bfr));
+  const te=document.getElementById('b_texc');if(te){te.textContent=fmtK(m.tresoExced);te.className='calc-v '+(m.tresoExced>=0?'green':'red');}
+  const tn=document.getElementById('b_tnet');if(tn){tn.textContent=fmtK(m.tresoNette);tn.className='calc-v '+(m.tresoNette>=0?'green':'red');}
+}
+
+/* ---- Valorisation (moteur amélioré) ---- */
+function bodyValo(){
+  const d=getDeal(state.modal.dealId);const m=compute(d);
+  const ask=N(d.prixDemande);
+  // gauge positions
+  const lo=m.low,hi=Math.max(m.high,ask,m.central)*1.02;
+  const pos=v=>Math.max(0,Math.min(100,(v-lo)/((hi-lo)||1)*100));
+  const gap=ask>0?((ask-m.central)/m.central*100):0;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="section-title brass">Hypothèses de valorisation</div>
+    <div class="grid-3">
+      <div class="field"><label>Multiple EV/EBE (secteur)</label><input class="inp num" id="v_mult" type="number" step="0.1" value="${m.multMid}"><div class="hint">Défaut ${d.sector}: ${(SECTOR[d.sector]||SECTOR.Autre).m.join(' / ')}×</div></div>
+      <div class="field"><label>Multiple EV/CA</label><input class="inp num" id="v_capct" type="number" step="0.05" value="${m.caPct}"></div>
+      <div class="field"><label>Coef. CAF</label><input class="inp num" id="v_caf" type="number" step="0.5" value="${N(d.cafCoef)}"></div>
+    </div>
+    <div class="section-title" style="margin-top:8px">Méthodes par multiple <span style="font-weight:400;color:var(--faint);font-size:12px">— Multiple × Indicateur + Trésorerie − Dettes</span></div>
+    ${methodHTML('Multiple × Résultat net moyen',`${m.multMid}× × ${fmtK(m.rnMoyen)} + ${fmtK(m.bridge)}`,m.eqRnMoyen,false)}
+    ${methodHTML('Multiple × EBE moyen',`${m.multMid}× × ${fmtK(m.ebeMoyen)} + ${fmtK(m.bridge)}`,m.eqEbeMoyen,false)}
+    ${methodHTML('Multiple × EBE retraité',`${m.multMid}× × ${fmtK(m.ebeRetraite)} + ${fmtK(m.bridge)}`,m.eqEbeRetr,true)}
+    <div class="section-title" style="margin-top:14px">Autres méthodes (recoupement)</div>
+    ${methodHTML('Multiple de CA',`${m.caPct}× × ${fmtK(m.caLast)} + ${fmtK(m.bridge)}`,m.eqCA,false)}
+    ${methodHTML('Capacité d\'autofinancement',`${N(d.cafCoef)}× × CAF ${fmtK(m.caf)}`,m.eqCAF,false)}
+    ${methodHTML('Patrimoniale (actif net comptable)',`Capitaux propres`,m.eqANCC,false)}
+    ${methodHTML('Capitalisation du résultat',`RN moyen ${fmtK(m.rnMoyen)} ÷ ${m.capRate}%`,m.eqCapit,false)}
+
+    <div class="verdict">
+      <h3>Prix conseillé — valeur des titres</h3>
+      <div class="vd-sub">Synthèse pondérée des méthodes ci-dessus (EBE retraité prépondérant).</div>
+      <div class="gauge">
+        <div class="gauge-fill" style="left:${pos(m.low)}%;width:${Math.max(0,pos(m.central)-pos(m.low))}%"></div>
+        <div class="gauge-pt" style="left:${pos(m.low)}%"><span class="lab">Bas</span><div class="dot"></div><span class="num">${fmtBig(m.low)}</span></div>
+        <div class="gauge-pt" style="left:${pos(m.central)}%"><span class="lab">Estimée</span><div class="dot" style="width:16px;height:16px"></div><span class="num">${fmtBig(m.central)}</span></div>
+        <div class="gauge-pt" style="left:${pos(m.high)}%"><span class="lab">Haut</span><div class="dot"></div><span class="num">${fmtBig(m.high)}</span></div>
+        ${ask>0?`<div class="gauge-pt ask" style="left:${pos(ask)}%"><span class="lab" style="color:#fff">Demandé</span><div class="dot"></div><span class="num" style="color:#fff">${fmtBig(ask)}</span></div>`:''}
+      </div>
+      <div class="verdict-row">
+        <div class="vd-cell"><div class="l">Offre d'ouverture</div><div class="v">${fmtBig(m.ouverture)}</div></div>
+        <div class="vd-cell"><div class="l">Valeur estimée</div><div class="v brass">${fmtBig(m.central)}</div></div>
+        <div class="vd-cell"><div class="l">Plafond à ne pas dépasser</div><div class="v">${fmtBig(m.high)}</div></div>
+      </div>
+      ${ask>0?`<div class="vd-note">Le vendeur demande <b>${fmtBig(ask)}</b>, soit <b>${gap>=0?'+':''}${gap.toFixed(0)}%</b> ${gap>=0?'au-dessus':'en-dessous'} de votre estimation. ${gap>15?'Marge de négociation importante — ancrez bas (offre d\'ouverture) et justifiez par l\'EBE retraité.':gap<-5?'Le prix demandé est inférieur à votre estimation : opportunité, sécurisez vite.':'Écart raisonnable, négociation classique.'}</div>`:'<div class="vd-note">Renseignez le prix demandé (onglet Fiche) pour comparer à votre estimation.</div>'}
+    </div>
+
+    <div class="ref-box">Référence AcquiFlow (formule simplifiée <b>3× EBITDA + Trésorerie − Dettes</b>) : <span class="rb-v">${fmtBig(m.naive)}</span>. À utiliser avec prudence — un multiple fixe de 3 ignore le secteur, la croissance et la qualité des résultats.</div>
+
+    <div style="margin-top:16px"><button class="btn btn-light btn-sm" onclick="alfredOnDeal('${d.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V5M9 3h6"/></svg> Demander l'avis d'Alfred (IA)</button></div>
+  `;
+  bind('v_mult','multMid');bind('v_capct','caPct');bind('v_caf','cafCoef');
+}
+function methodHTML(name,formula,val,hl){
+  return `<div class="method ${hl?'hl':''}"><div><div class="m-name">${name}</div><div class="m-formula">${formula}</div></div><div class="m-val">${fmtBig(val)}</div></div>`;
+}
+
+/* ---- Montage ---- */
+function bodyMontage(){
+  const d=getDeal(state.modal.dealId);const m=compute(d);
+  const sug={apport:0.10*m.prixNego,gap:0.20*m.prixNego,cv:0.15*m.prixNego,bpi:Math.round(0.07*m.prixNego),pt:30000,aff:0.8*N(d.creances)};
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="section-title brass" style="margin:0">Montage financier — sources & remboursement</div>
+      <button class="btn btn-light btn-sm" onclick="fillSuggested()">Remplir les valeurs suggérées</button>
+    </div>
+    <table class="mtable">
+      <thead><tr><th>Source</th><th style="text-align:right">Montant (€)</th><th style="text-align:right">Suggéré</th><th style="text-align:center">Années</th><th style="text-align:center">Taux %</th><th style="text-align:right">Annuité</th></tr></thead>
+      <tbody>
+        <tr><td class="src">Tréso. excédentaire</td><td class="mono-cell" id="mt_te">${fmtK(m.tresoExced)}</td><td class="sug">auto</td><td style="text-align:center">–</td><td style="text-align:center">–</td><td style="text-align:center">–</td></tr>
+        <tr><td class="src">Apport personnel</td><td style="text-align:right"><input id="mt_apport" type="number" value="${N(d.apportMontant)}"></td><td class="sug">${fmtK0(sug.apport)}</td><td style="text-align:center">–</td><td style="text-align:center">–</td><td style="text-align:center">–</td></tr>
+        ${mtRow('Crédit vendeur','cv',d,sug.cv)}
+        ${mtRow('GAP / Prêt d\'honneur','gap',d,sug.gap)}
+        ${mtRow('Prêt Boost BPI','bpi',d,sug.bpi)}
+        ${mtRow('Prêt\'Up / Crowdfunding','pt',d,sug.pt)}
+        ${mtRow('Autres prêts','aut',d,0)}
+        <tr><td class="src">Earn-out (complément)</td><td style="text-align:right"><input id="mt_eo" type="number" value="${N(d.eoMontant)}"></td><td class="sug">conditionnel</td><td style="text-align:center"><input id="mt_eoD" type="number" value="${N(d.eoDuree)}" style="max-width:54px"></td><td style="text-align:center">–</td><td style="text-align:center">–</td></tr>
+        <tr class="tot"><td>Total financement</td><td class="mono-cell" id="mt_total"></td><td></td><td></td><td></td><td class="mono-cell" id="mt_service"></td></tr>
+      </tbody>
+    </table>
+    <div class="calc-grid" style="margin-top:18px">
+      <div class="calc"><div class="calc-l">Prix négocié</div><div class="calc-v" id="mt_prix"></div></div>
+      <div class="calc"><div class="calc-l">Excédent de financement</div><div class="calc-formula">Total − Prix</div><div class="calc-v" id="mt_exc"></div></div>
+      <div class="calc"><div class="calc-l">Service de dette annuel</div><div class="calc-v" id="mt_sd"></div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Analyse de faisabilité</div>
+    <div style="text-align:center;margin-bottom:8px"><span class="calc-l">Seuil de référence : 50% de l'EBE retraité</span><div class="calc-v" id="mt_seuil" style="font-size:24px"></div></div>
+    <div class="feas" id="mt_feas"></div>
+    <div class="hint" style="margin-top:12px">Règle prudentielle : le coût annuel du financement doit rester sous 50% de l'EBE retraité pour absorber un aléa. Le DSCR (EBE ÷ service de dette) est détaillé dans l'onglet Outils financiers → Ratios Banque.</div>
+  `;
+  ['cv','bpi','pt','aut','gap'].forEach(k=>{
+    bind('mt_'+k,(k+'Montant'));
+    bind('mt_'+k+'D',(k+'Duree'));
+    bind('mt_'+k+'T',(k+'Taux'));
+  });
+  bind('mt_apport','apportMontant');bind('mt_eo','eoMontant');bind('mt_eoD','eoDuree');
+  refreshMontage();
+}
+function mtRow(label,k,d,sug){
+  const hasRate=k!=='gap';
+  return `<tr><td class="src">${label}</td>
+    <td style="text-align:right"><input id="mt_${k}" type="number" value="${N(d[k+'Montant'])}"></td>
+    <td class="sug">${sug?fmtK0(sug):'–'}</td>
+    <td style="text-align:center"><input id="mt_${k}D" type="number" value="${N(d[k+'Duree'])}" style="max-width:54px"></td>
+    <td style="text-align:center">${hasRate?`<input id="mt_${k}T" type="number" value="${N(d[k+'Taux'])}" style="max-width:54px">`:'0%'}</td>
+    <td class="mono-cell" id="mt_${k}A"></td></tr>`;
+}
+function refreshMontage(){
+  const d=getDeal(state.modal.dealId);const m=compute(d);
+  set('mt_te',fmtK(m.tresoExced));
+  [['cv','cvMontant','cvDuree','cvTaux'],['bpi','bpiMontant','bpiDuree','bpiTaux'],['pt','ptMontant','ptDuree','ptTaux'],['aut','autMontant','autDuree','autTaux'],['gap','gapMontant','gapDuree','gapTaux']]
+    .forEach(([k,a,du,r])=>{const amt=N(d[a]);set('mt_'+k+'A',amt>0?fmtK(annuity(amt,d[du],k==='gap'?0:d[r])):'–');});
+  set('mt_total',fmtK(m.totalFin));set('mt_service',fmtK(m.serviceDette));
+  set('mt_prix',fmtK(m.prixNego));
+  const exc=document.getElementById('mt_exc');if(exc){exc.textContent=fmtK(m.excedentFin);exc.className='calc-v '+(m.excedentFin>=0?'green':'red');}
+  set('mt_sd',fmtK(m.serviceDette));
+  set('mt_seuil',fmtK(m.seuil));
+  const fe=document.getElementById('mt_feas');
+  if(fe)fe.innerHTML=`
+    <div class="feas-card ${m.feasible?'feas-ok':'feas-no'}">
+      <div class="fc-t">Scénario 1 — sans earn-out</div>
+      <div class="fc-l">Coût annuel max</div><div class="fc-v">${fmtK(m.coutAnnuelMax)}</div>
+      <div class="verdict-pill ${m.feasible?'ok':'no'}">${m.feasible?'Deal soutenable ✓':'Trop tendu ✕'}</div>
+    </div>
+    <div class="feas-card ${m.feasibleEO?'feas-ok':'feas-no'}">
+      <div class="fc-t">Scénario 2 — avec earn-out (+10% CA)</div>
+      <div class="fc-l" style="margin-bottom:6px">EBE ajusté ${fmtK(m.ebeEarnout)} · seuil ${fmtK(m.seuilEO)}</div>
+      <div class="fc-l">Coût annuel max</div><div class="fc-v">${fmtK(m.coutAnnuelMax)}</div>
+      <div class="verdict-pill ${m.feasibleEO?'ok':'no'}">${m.feasibleEO?'Deal soutenable ✓':'Trop tendu ✕'}</div>
+    </div>`;
+}
+function fillSuggested(){
+  const d=getDeal(state.modal.dealId);const m=compute(d);
+  d.apportMontant=Math.round(0.10*m.prixNego);
+  d.gapMontant=Math.round(0.20*m.prixNego);
+  d.cvMontant=Math.round(0.15*m.prixNego);
+  d.bpiMontant=Math.round(0.07*m.prixNego);
+  d.ptMontant=30000;
+  saveDeals();bodyMontage();
+}
+
+/* ============================================================
+   OUTILS FINANCIERS (Simulateur full-page, 4 sous-onglets)
+   ============================================================ */
+function renderSimulateur(c){
+  if(!state.finDealId&&state.deals.length)state.finDealId=state.deals[0].id;
+  const d=getDeal(state.finDealId);
+  document.getElementById('topbar-extra').innerHTML=d?`
+    <select class="inp" style="min-width:200px" onchange="state.finDealId=this.value;render()">
+      ${state.deals.map(x=>`<option value="${x.id}" ${x.id===state.finDealId?'selected':''}>${esc(x.name||'Sans nom')}</option>`).join('')}
+    </select>`:'';
+  if(!d){c.innerHTML='<div class="empty">Créez un deal pour utiliser les outils financiers.</div>';return;}
+  const SUB=[['sim','Simulateur'],['cf','Cash-flow'],['ratios','Ratios Banque'],['score','Scoring']];
+  c.innerHTML=`<div class="subtabs">${SUB.map(([id,l])=>`<button class="subtab ${state.finTab===id?'active':''}" onclick="state.finTab='${id}';renderSimulateur(document.getElementById('content'))">${l}</button>`).join('')}</div><div id="fin-body"></div>`;
+  const b=document.getElementById('fin-body');
+  if(state.finTab==='sim')finSim(b,d);
+  else if(state.finTab==='cf')finCF(b,d);
+  else if(state.finTab==='ratios')finRatios(b,d);
+  else if(state.finTab==='score')finScore(b,d);
+}
+function finCard(title,k,d,hasRate){
+  const amt=N(d[k+'Montant']);const mensual=amt>0?annuity(amt,d[k+'Duree'],hasRate?d[k+'Taux']:0)/12:0;
+  return `<div class="fin-card"><h4>${title}</h4>
+    <div class="field"><label>Montant (€)</label><input class="inp num" type="number" value="${amt}" oninput="finSet('${k}Montant',this.value)"></div>
+    <div class="grid-2">
+      <div class="field"><label>Durée (années)</label><input class="inp num" type="number" value="${N(d[k+'Duree'])}" oninput="finSet('${k}Duree',this.value)"></div>
+      ${hasRate?`<div class="field"><label>Taux (%)</label><input class="inp num" type="number" value="${N(d[k+'Taux'])}" oninput="finSet('${k}Taux',this.value)"></div>`:'<div></div>'}
+    </div>
+    <div class="mensual">Mensualité : ${fmtEur(mensual)}</div></div>`;
+}
+function finSet(field,v){const d=getDeal(state.finDealId);d[field]=v;saveDeals();renderSimulateur(document.getElementById('content'));}
+function finSim(b,d){
+  const m=compute(d);
+  b.innerHTML=`
+    <div class="fin-grid">
+      ${finCard('Crédit vendeur','cv',d,true)}
+      ${finCard('Prêt BPI','bpi',d,true)}
+      ${finCard('Prêt\'Up / Crowdfunding','pt',d,true)}
+      ${finCard('Autres emprunts','aut',d,true)}
+      ${finCard('GAP / Prêt d\'honneur','gap',d,false)}
+      <div class="fin-card"><h4>Apport personnel</h4>
+        <div class="field"><label>Apport (€)</label><input class="inp num" type="number" value="${N(d.apportMontant)}" oninput="finSet('apportMontant',this.value)"></div>
+        <div class="field"><label>Earn-out (€)</label><input class="inp num" type="number" value="${N(d.eoMontant)}" oninput="finSet('eoMontant',this.value)"></div>
+      </div>
+    </div>
+    <div class="fin-grid" style="margin-top:16px">
+      <div class="result-card"><div class="rl">Mensualité totale</div><div class="rv">${fmtEur(m.mensualite)}</div></div>
+      <div class="result-card"><div class="rl">Service de dette annuel</div><div class="rv">${fmtEur(m.serviceDette)}</div><div class="rs">EBE retraité : ${fmtEur(m.ebeRetraite)}</div></div>
+      <div class="result-card"><div class="rl">DSCR <span style="font-weight:400;color:var(--faint)">Debt Service Coverage Ratio</span></div><div class="rv">${fmtX(m.dscr)}</div>
+        <span class="badge ${m.dscr>=1.5?'ok':m.dscr>=1?'warn':'bad'}">${m.dscr>=1.5?'Excellent':m.dscr>=1?'Acceptable':'Risqué'}</span></div>
+    </div>`;
+}
+function finCF(b,d){
+  const m=compute(d);const g=N(d.croissance)/100;
+  const ebe0=m.ebeRetraite,sd=m.serviceDette;
+  const years=[];let cum=0;
+  for(let i=1;i<=5;i++){const ebe=ebe0*Math.pow(1+g,i-1);const dette=i<=3?sd:0;const net=ebe-dette;cum+=net;years.push({i,ebe,dette,net,cum});}
+  const maxV=Math.max(...years.map(y=>y.cum),...years.map(y=>y.ebe))*1.1||1;
+  const W=900,H=300,pad=44;
+  const x=i=>pad+(i-1)/4*(W-pad-10);
+  const y=v=>H-pad-(v/maxV)*(H-pad-20);
+  const area=(key,col,fill)=>{
+    let p=`M ${x(1)} ${H-pad}`;years.forEach(yr=>p+=` L ${x(yr.i)} ${y(yr[key])}`);p+=` L ${x(5)} ${H-pad} Z`;
+    return `<path d="${p}" fill="${fill}" opacity="0.5"/>`+`<polyline points="${years.map(yr=>x(yr.i)+','+y(yr[key])).join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>`;
+  };
+  b.innerHTML=`
+    <div class="field" style="max-width:280px"><label>Taux de croissance annuel (%)</label><input class="inp num" type="number" value="${N(d.croissance)}" oninput="finSet('croissance',this.value)"><div class="hint">EBE de référence : ${fmtEur(ebe0)}</div></div>
+    <div class="chart-wrap">
+      <h3 style="font-size:16px;color:var(--ink-2)">Projection sur 5 ans</h3>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">EBE projeté vs cash-flow cumulé (après service de dette)</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+        ${[0,.25,.5,.75,1].map(f=>`<line x1="${pad}" y1="${y(maxV*f)}" x2="${W-10}" y2="${y(maxV*f)}" stroke="#e8edf1"/><text x="6" y="${y(maxV*f)+4}" font-size="10" fill="#94a4b5" font-family="IBM Plex Mono">${fmtK0(maxV*f)}</text>`).join('')}
+        ${area('cum','#7c5cd6','#c9bcef')}
+        ${area('ebe','#2563eb','#bcd0f6')}
+        ${years.map(yr=>`<text x="${x(yr.i)}" y="${H-pad+18}" font-size="10" fill="#94a4b5" text-anchor="middle">Année ${yr.i}</text>`).join('')}
+      </svg>
+      <div style="display:flex;gap:20px;justify-content:center;margin-top:8px;font-size:12px;color:var(--muted)">
+        <span style="color:#2563eb">● EBE projeté</span><span style="color:#7c5cd6">● Cash-flow cumulé</span>
+      </div>
+    </div>
+    <div class="year-grid">
+      ${years.map(yr=>`<div class="year-card"><h5>Année ${yr.i}</h5>
+        <div class="year-row"><span class="yl">EBE</span><span class="yv">${fmtK(yr.ebe)}</span></div>
+        <div class="year-row"><span class="yl">Dette</span><span class="yv" style="color:var(--red)">-${fmtK(yr.dette)}</span></div>
+        <div class="year-row"><span class="yl">Net</span><span class="yv" style="color:var(--green)">${fmtK(yr.net)}</span></div>
+      </div>`).join('')}
+    </div>`;
+}
+function ratioCard(title,sub,val,cible,ok,status){
+  return `<div class="ratio ${ok?'ok':'bad'}"><div class="rt">${title}<span>${ok?'✓':'✕'}</span></div><div class="rsub">${sub}</div><div class="rval">${val}</div><div class="rcible">Cible : ${cible}${status?' · '+status:''}</div></div>`;
+}
+function finRatios(b,d){
+  const m=compute(d);
+  b.innerHTML=`
+    <div class="chart-wrap" style="margin-bottom:18px">
+      <h3 style="font-size:16px;color:var(--ink-2)">Ratios bancaires LBO</h3>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">Indicateurs clés analysés par les banques pour le financement d'acquisition</div>
+      <div class="ratio-grid">
+        ${ratioCard('Dette / EBE','Leverage',fmtX(m.leverage),'≤ 5x',m.leverage<=5,m.leverage<=5?'Excellent':'Élevé')}
+        ${ratioCard('EBE / Intérêts','ICR',fmtX(m.icr),'≥ 2.5x',m.icr>=2.5,'')}
+        ${ratioCard('DSCR','Couverture du service',fmtX(m.dscr),'≥ 1.5x',m.dscr>=1.5,m.dscr>=1.5?'Excellent':'')}
+        ${ratioCard('Dette nette / EBE','Net leverage',fmtX(m.netLeverage),'≤ 4x',m.netLeverage<=4,'')}
+        ${ratioCard('Apport / Prix','Equity contribution',(m.apportPrix*100).toFixed(0)+'%','≥ 25%',m.apportPrix>=0.25,m.apportPrix>0?'':'Sans apport')}
+        ${ratioCard('Dette / Fonds propres','Gearing',fmtX(m.detteFP),'≤ 3x',m.detteFP<=3,'')}
+        ${ratioCard('FCF / Dette','FCF yield',(isFinite(m.fcfYield)?(m.fcfYield*100).toFixed(0):'∞')+'%','≥ 15%',!isFinite(m.fcfYield)||m.fcfYield>=0.15,'')}
+        ${ratioCard('Crédit vendeur / Prix','Seller financing',(m.cvPrix*100).toFixed(0)+'%','≥ 30%',m.cvPrix>=0.30,m.cvPrix>=0.3?'':'À renforcer')}
+      </div>
+    </div>
+    <div class="fin-grid" style="grid-template-columns:1fr 1fr">
+      <div class="result-card"><h4 style="margin-bottom:14px;color:var(--ink-2)">Synthèse du montage</h4>
+        ${synthRow('Dette totale',fmtEur(m.detteTotale))}
+        ${synthRow('Service de dette annuel',fmtEur(m.serviceDette))}
+        ${synthRow('Intérêts (1ʳᵉ année)',fmtEur(m.interets1))}
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid var(--line);margin-top:6px"><span style="font-weight:600">FCF après dette</span><span class="mono" style="font-weight:600;color:var(--green)">${fmtEur(m.fcfApresDette)}</span></div>
+      </div>
+      <div class="result-card"><h4 style="margin-bottom:14px;color:var(--ink-2)">Recommandation</h4>
+        ${m.apportPrix<0.25?`<div class="ratio bad" style="margin-bottom:10px"><div class="rsub">Sans apport suffisant, renforcez le crédit vendeur (idéalement 30–50% du prix) ou injectez du capital.</div></div>`:''}
+        <div class="ratio ${m.dscr>=1.5&&m.leverage<=5?'ok':'bad'}"><div class="rsub">${m.dscr>=1.5&&m.leverage<=5?'Bon profil de financement : les ratios principaux sont dans les normes bancaires.':'Certains ratios sortent des normes — retravaillez le prix ou la structure de dette.'}</div></div>
+      </div>
+    </div>`;
+}
+function synthRow(l,v){return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-2)"><span style="color:var(--muted)">${l}</span><span class="mono" style="font-weight:600">${v}</span></div>`;}
+function scoreColor(s){return s>=8?'var(--green)':s>=6?'var(--amber)':'var(--red)';}
+function scoreBg(s){return s>=8?'var(--green-bg)':s>=6?'var(--amber-bg)':'var(--red-bg)';}
+function finScore(b,d){
+  const m=compute(d);
+  const marge=m.caLast>0?m.ebeRetraite/m.caLast:0;
+  const sMarge=Math.max(0,Math.min(10,Math.round(marge*100/2)));   // 20% margin -> 10
+  const croiss=m.caMoyen>0&&N(d.caN3)>0?(N(d.caN1)/N(d.caN3)-1):0;
+  const sCroiss=Math.max(0,Math.min(10,Math.round(5+croiss*40)));
+  const pxEbe=m.ebeRetraite>0?m.prixNego/m.ebeRetraite:99;
+  const sPx=Math.max(0,Math.min(10,Math.round(10-(pxEbe-2)*1.3)));
+  const sTreso=Math.max(0,Math.min(10,Math.round(m.tresoNette/(m.caLast*0.1||1)*2)));
+  const sDscr=isFinite(m.dscr)?Math.max(0,Math.min(10,Math.round(m.dscr*1.0+ (m.dscr>=3?7:0)))):10;
+  const sDscrC=Math.min(10,isFinite(m.dscr)?(m.dscr>=2?10:m.dscr>=1.5?8:m.dscr>=1?5:2):10);
+  const global=(sMarge*0.25+sCroiss*0.20+sPx*0.25+sTreso*0.15+sDscrC*0.15);
+  b.innerHTML=`
+    <div class="scoreband" style="background:linear-gradient(100deg,${global>=8?'#1c8a55,#15703f':global>=6?'#c0851c,#a06f14':'#c23b3b,#9c2f2f'})">
+      <div><div class="sl">Score global du deal</div><div class="sv">${global.toFixed(1)}/10</div></div>
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.85"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="#fff"/></svg>
+    </div>
+    <div class="result-card" style="margin-top:14px"><div style="color:var(--muted)">${global>=8?'Profil attractif avec de bons indicateurs financiers. À sécuriser.':global>=6?'Profil correct — quelques points de vigilance à creuser en due diligence.':'Profil à risque : retravaillez le prix ou la structure avant d\'avancer.'}</div></div>
+    <div class="score-grid">
+      ${scoreItem('Marge EBE','25%',sMarge,(marge*100).toFixed(1)+'% du CA')}
+      ${scoreItem('Croissance CA','20%',sCroiss,'sur 3 ans : '+(croiss*100).toFixed(0)+'%')}
+      ${scoreItem('Prix / EBE','25%',sPx,'ratio '+fmtX(pxEbe))}
+      ${scoreItem('Trésorerie','15%',sTreso,'nette '+fmtK0(m.tresoNette))}
+      ${scoreItem('DSCR','15%',sDscrC,'ratio '+fmtX(m.dscr))}
+    </div>`;
+}
+function scoreItem(t,w,s,sub){
+  return `<div class="score-card"><div class="sc-t">${t}<span class="sc-w">${w}</span></div>
+    <div class="sc-v" style="color:${scoreColor(s)};background:${scoreBg(s)}">${s}/10</div>
+    <div class="sc-sub">${sub}</div></div>`;
+}
+
+/* ============================================================
+   ALFRED IA (Anthropic API)
+   ============================================================ */
+let alfredText='';
+function renderAlfred(c){
+  const d=state.finDealId?getDeal(state.finDealId):state.deals[0];
+  document.getElementById('topbar-extra').innerHTML=d?`
+    <select class="inp" style="min-width:200px" onchange="state.finDealId=this.value;alfredText='';render()">
+      ${state.deals.map(x=>`<option value="${x.id}" ${x.id===(d&&d.id)?'selected':''}>${esc(x.name||'Sans nom')}</option>`).join('')}
+    </select>`:'';
+  c.innerHTML=`<div class="alfred">
+    <div class="alfred-hero">
+      <div class="alfred-av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V5M9 3h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg></div>
+      <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:18px;color:#fff">Alfred — votre analyste IA</div>
+      <div style="font-size:13px;color:#8aa0b4;margin-top:3px">Donne un avis qualitatif sur le deal : forces, risques, angle de négociation.</div></div>
+    </div>
+    ${d?`<button class="btn btn-primary" onclick="alfredOnDeal('${d.id}')" style="margin-bottom:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 5 5L20 7"/></svg> Analyser « ${esc(d.name||'ce deal')} »</button>
+    <div class="alfred-bubble ${alfredText?'':'loading'}" id="alfred-bubble">${alfredText?esc(alfredText):'Cliquez sur « Analyser » pour obtenir l\'avis d\'Alfred sur ce deal.'}</div>`
+    :'<div class="empty">Créez un deal d\'abord.</div>'}
+  </div>`;
+}
+async function alfredOnDeal(id){
+  const d=getDeal(id);if(!d)return;
+  const m=compute(d);
+  state.view='alfred';state.finDealId=id;alfredText='';render();
+  const bubble=document.getElementById('alfred-bubble');
+  if(bubble){bubble.classList.add('loading');bubble.textContent='Alfred analyse les chiffres…';}
+  const prompt=`Tu es Alfred, analyste M&A senior spécialisé dans le rachat de PME en France. Donne un avis concis et structuré (8-12 lignes max) sur cette cible d'acquisition. Sois direct et opérationnel, pas de blabla.
+
+Société: ${d.name} — secteur ${d.sector}, ${d.location}
+CA (N-1/N-2/N-3): ${fmtK(d.caN1)} / ${fmtK(d.caN2)} / ${fmtK(d.caN3)}
+EBE (N-1/N-2/N-3): ${fmtK(d.ebeN1)} / ${fmtK(d.ebeN2)} / ${fmtK(d.ebeN3)}
+EBE retraité: ${fmtK(m.ebeRetraite)} | Résultat net moyen: ${fmtK(m.rnMoyen)}
+Capitaux propres: ${fmtK(d.capitauxPropres)} | Trésorerie: ${fmtK(d.tresorerie)} | Dettes financières: ${fmtK(d.dettesFinancieres)}
+BFR: ${fmtK(m.bfr)}
+Prix demandé: ${fmtK(d.prixDemande)} | Valeur estimée (multi-méthodes): ${fmtK(m.central)} (fourchette ${fmtK(m.low)}–${fmtK(m.high)})
+Note libre: ${d.notes||'—'}
+
+Structure ta réponse en 3 blocs courts: 1) Forces  2) Risques / points de vigilance  3) Stratégie de prix & négociation (donne un prix d'offre d'ouverture concret en euros). Réponds en français.`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await r.json();
+    const txt=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n').trim();
+    alfredText=txt||'Réponse vide.';
+  }catch(e){
+    alfredText="Impossible de joindre Alfred (l'analyse IA nécessite une connexion à l'API). En attendant, votre estimation chiffrée reste dans l'onglet Valorisation : visez une offre d'ouverture autour de "+fmtK(m.ouverture)+" et un plafond à "+fmtK(m.high)+".";
+  }
+  if(state.view==='alfred')render();
+}
+
+/* ---------- deal ops ---------- */
+function delDeal(id){
+  if(!confirm('Supprimer ce deal ?'))return;
+  state.deals=state.deals.filter(d=>d.id!==id);saveDeals();render();
+}
+async function resetData(){
+  if(!confirm('Réinitialiser avec les deals d\'exemple ? Vos saisies seront perdues.'))return;
+  state.deals=seedDeals();saveDeals();state.finDealId=null;render();
+}
+
+/* ---------- boot ---------- */
+(async function(){
+  initLock();
+  const saved=await loadDeals();
+  state.deals=(saved&&saved.length)?saved:seedDeals();
+  if(!saved)saveDeals();
+})();
+</script>
+</body>
+</html>
