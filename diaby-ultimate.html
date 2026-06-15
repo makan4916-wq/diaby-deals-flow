@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diaby Deals Flow — Pipeline + Claude AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0d1825;--ink-2:#13212f;--ink-3:#1b2c3d;--canvas:#eceef1;--surface:#fff;--surface-2:#f6f8fa;--text:#152330;--muted:#62748a;--faint:#94a4b5;--line:#d9dfe5;--line-2:#e8edf1;--brass:#b9892c;--brass-d:#9a7020;--brass-bg:#fbf4e3;--blue:#2563eb;--blue-d:#1d4ed8;--blue-bg:#e9f0fe;--green:#1c8a55;--green-bg:#e7f6ee;--red:#c23b3b;--red-bg:#fbe9e9;--radius:14px;--shadow:0 1px 2px rgba(16,32,48,.05),0 6px 20px rgba(16,32,48,.06);--shadow-l:0 12px 40px rgba(13,24,37,.18);}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--canvas);color:var(--text);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,textarea{font-family:inherit;font-size:14px}
+
+/* Lock */
+.lock{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#13212f,#0d1825);display:flex;align-items:center;justify-content:center}.lock.hidden{display:none}
+.lock-card{background:var(--surface);border-radius:18px;padding:36px 30px;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.lock-logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(150deg,var(--brass),var(--brass-d));display:grid;place-items:center;margin:0 auto 18px;color:#fff}
+.lock-card h2{font-size:21px;color:var(--ink-2);margin-bottom:8px}
+.lock-card p{font-size:13px;color:var(--muted);margin:8px 0 22px}
+#lock-input{width:100%;padding:14px;border:1px solid var(--line);border-radius:11px;text-align:center;font-size:18px;letter-spacing:4px;margin-bottom:14px;font-family:'IBM Plex Mono'}
+.lock-err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:10px}
+.lock-reset{margin-top:16px;font-size:11.5px;color:var(--faint);text-decoration:underline;cursor:pointer}
+.lock-btn{background:var(--blue);color:#fff;padding:12px 32px;border-radius:10px;font-weight:600;width:100%}
+.lock-btn:hover{background:var(--blue-d)}
+
+/* Layout */
+.app{display:flex;min-height:100vh}.app.hidden{display:none}
+.sidebar{width:248px;flex-shrink:0;background:var(--ink);color:#cbd6e2;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:22px 16px;gap:6px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 18px}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(150deg,var(--brass),var(--brass-d));display:grid;place-items:center;color:#fff;flex-shrink:0}
+.brand-name{font-family:'Space Grotesk';font-weight:700;font-size:19px;color:#fff}
+.brand-sub{font-size:11px;color:#6f8194}
+.nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:#9fb0c2;font-weight:500;font-size:14px;transition:.14s;cursor:pointer;width:100%}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#e4ecf3}
+.nav-item.active{background:var(--ink-3);color:#fff}
+.nav-spacer{flex:1}
+.nav-logout{margin-top:auto}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{padding:22px 30px;border-bottom:1px solid var(--line);background:var(--surface)}
+.topbar h1{font-size:23px;color:var(--ink-2)}
+.content{padding:20px 30px 60px;flex:1;overflow-y:auto}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Pipeline */
+.board{display:flex;gap:16px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+.col{flex:0 0 280px;display:flex;flex-direction:column}
+.col-title{font-weight:600;font-size:14.5px;color:var(--ink-2);margin-bottom:12px}
+.col-body{display:flex;flex-direction:column;gap:11px;min-height:80px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:.14s}
+.card:hover{box-shadow:var(--shadow-l);transform:translateY(-1px)}
+.card-name{font-weight:600;font-size:15px;color:var(--ink-2);margin-bottom:6px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.card-kpis{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-2);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.card-kpi{background:var(--surface-2);padding:6px 8px;font-size:11px;color:var(--muted);text-align:right}
+.card-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-ca{background:var(--brass-bg);color:var(--brass-d)}
+
+/* Chat */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 120px);max-width:900px;margin:0 auto}
+.chat-header{padding:20px;border-bottom:1px solid var(--line);background:var(--surface)}
+.chat-header h2{margin-bottom:8px}
+.chat-header p{color:var(--muted);font-size:13px}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:12px}
+.msg.user{justify-content:flex-end}
+.msg-avatar{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;font-weight:600}
+.msg.claude .msg-avatar{background:var(--blue-bg);color:var(--blue)}
+.msg.user .msg-avatar{background:var(--brass-bg);color:var(--brass)}
+.msg-content{max-width:520px;padding:12px 14px;border-radius:12px;line-height:1.5}
+.msg.claude .msg-content{background:var(--surface-2);border:1px solid var(--line-2)}
+.msg.user .msg-content{background:var(--blue);color:#fff}
+.chat-input-area{padding:20px;border-top:1px solid var(--line);background:var(--surface)}
+.chat-input-group{display:flex;gap:8px}
+.chat-input-group textarea{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:10px;resize:none;max-height:100px}
+.chat-input-group textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.chat-input-group button{background:var(--blue);color:#fff;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer}
+.chat-input-group button:hover{background:var(--blue-d)}
+.chat-input-group button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Settings */
+.settings-form{max-width:600px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+.form-group input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px}
+.form-group input:focus{outline:none;border-color:var(--blue)}
+.btn-save{background:var(--blue);color:#fff;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer}
+.btn-save:hover{background:var(--blue-d)}
+.api-status{padding:12px;border-radius:10px;margin:10px 0;font-size:12px}
+.api-status.ok{background:var(--green-bg);color:var(--green)}
+.api-status.error{background:var(--red-bg);color:var(--red)}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-content{background:var(--surface);border-radius:16px;padding:30px;max-width:450px;box-shadow:var(--shadow-l)}
+.modal-header h2{margin-bottom:8px}
+.modal-header p{color:var(--muted);font-size:13px}
+.modal-body{margin:20px 0}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions button{flex:1;padding:11px 14px;border-radius:10px;font-weight:600}
+.btn-primary-m{background:var(--blue);color:#fff}
+.btn-primary-m:hover{background:var(--blue-d)}
+.btn-secondary-m{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<!-- Lock -->
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-logo">🔐</div>
+    <h2>Diaby Deals Flow</h2>
+    <p>Entrez votre code d'accès</p>
+    <input id="lock-input" type="password" inputmode="numeric" placeholder="Code">
+    <button class="lock-btn" onclick="checkPin()">Déverrouiller</button>
+    <div id="lock-err" class="lock-err"></div>
+    <button class="lock-reset" onclick="resetPin()">Code oublié ?</button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app hidden" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">💼</div>
+      <div>
+        <div class="brand-name">Diaby</div>
+        <div class="brand-sub">Deals Flow</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="switchTab('pipeline', this)">📊 Pipeline</div>
+      <div class="nav-item" onclick="switchTab('claude', this)">🤖 Claude IA</div>
+      <div class="nav-item" onclick="switchTab('settings', this)">⚙️ Paramètres</div>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-item nav-logout" onclick="logoutApp()">🚪 Déconnexion</div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h1>Diaby Deals Flow — Pipeline + Claude IA</h1>
+    </div>
+    <div class="content">
+      
+      <!-- Pipeline Tab -->
+      <div id="tab-pipeline" class="tab-content active">
+        <h2 style="margin-bottom:20px">Pipeline Kanban</h2>
+        <div class="board" id="board"></div>
+      </div>
+
+      <!-- Claude Tab -->
+      <div id="tab-claude" class="tab-content">
+        <div class="chat-container">
+          <div class="chat-header">
+            <h2>🤖 Claude IA — Analyse de Deals</h2>
+            <p>Posez des questions, analysez vos dossiers, obtenez des recommandations stratégiques.</p>
+          </div>
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-input-area">
+            <div class="chat-input-group">
+              <textarea id="chatInput" placeholder="Posez une question à Claude..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+              <button onclick="sendMessage()" id="sendBtn">Envoyer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="tab-settings" class="tab-content">
+        <div class="settings-form">
+          <h2 style="margin-bottom:30px">Paramètres API Claude</h2>
+          <div class="form-group">
+            <label>Clé API Anthropic</label>
+            <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
+            <p style="font-size:12px;color:var(--faint);margin-top:6px">Stockée <strong>localement</strong> dans votre navigateur.</p>
+          </div>
+          <div id="apiStatus"></div>
+          <button class="btn-save" onclick="saveApiKey()" style="margin-top:20px">Sauvegarder la clé</button>
+          <button class="btn-save" onclick="testApiKey()" style="margin-left:10px;background:var(--green)">Tester la clé</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- API Modal -->
+<div class="modal" id="apiModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Configuration Claude API</h2>
+      <p>Entrez votre clé API pour utiliser Claude IA</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Clé API</label>
+        <input type="password" id="modalApiKeyInput" placeholder="sk-ant-api03-...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary-m" onclick="saveApiKeyModal()">Continuer</button>
+      <button class="btn-secondary-m" onclick="skipApiSetup()">Passer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PIN = '201290';
+let apiKey = localStorage.getItem('diaby_api_key') || '';
+let chatHistory = [];
+let deals = [];
+
+// Initialize
+function init() {
+  const isLocked = !sessionStorage.getItem('diaby_unlocked');
+  if(isLocked) {
+    document.getElementById('lock').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  } else {
+    unlockApp();
+  }
+  
+  if(apiKey) {
+    document.getElementById('apiKeyInput').value = apiKey;
+  } else if(location.hash !== '#skip-api') {
+    document.getElementById('apiModal').classList.add('open');
+  }
+  
+  initDeals();
+  renderBoard();
+  addInitialMessage();
+}
+
+function checkPin() {
+  const input = document.getElementById('lock-input').value;
+  const err = document.getElementById('lock-err');
+  if(input === PIN) {
+    sessionStorage.setItem('diaby_unlocked', '1');
+    document.getElementById('lock').classList.add('hidden');
+    unlockApp();
+  } else {
+    err.textContent = 'Code incorrect';
+    document.getElementById('lock-input').style.borderColor = 'var(--red)';
+    setTimeout(() => {
+      document.getElementById('lock-input').style.borderColor = 'var(--line)';
+      document.getElementById('lock-input').value = '';
+    }, 2000);
+  }
+}
+
+function resetPin() {
+  if(confirm('Réinitialiser ? Cela supprimera toutes les données.')) {
+    localStorage.clear();
+    sessionStorage.clear();
+    location.reload();
+  }
+}
+
+function unlockApp() {
+  document.getElementById('app').classList.remove('hidden');
+}
+
+function logoutApp() {
+  sessionStorage.removeItem('diaby_unlocked');
+  document.getElementById('lock').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('lock-input').value = '';
+}
+
+// Tab Switching
+function switchTab(tab, element) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  if(element) element.classList.add('active');
+}
+
+// Deals
+function initDeals() {
+  deals = [
+    {id:1, name:'Industrie Usinage 29', loc:'Quimper', ca:850000, stage:'bilans', prio:'Moyenne', prob:25},
+    {id:2, name:'SaaS Digitech IDF', loc:'Ile-de-France', ca:1200000, stage:'rdv_phys', prio:'Élevée', prob:40},
+    {id:3, name:'Construction BTP 69', loc:'Lyon', ca:950000, stage:'rdv_phys', prio:'Élevée', prob:40},
+    {id:4, name:'Tech Solutions', loc:'Occitanie', ca:650000, stage:'bilans', prio:'Moyenne', prob:25},
+    {id:5, name:'Excel Company IDF', loc:'Ile-de-France', ca:520000, stage:'rdv_tel', prio:'Faible', prob:10},
+    {id:6, name:'ORDINATEUR COMPANY 34', loc:'Montpellier', ca:800000, stage:'loi', prio:'Élevée', prob:80}
+  ];
+}
+
+function renderBoard() {
+  const stages = ['sourcing', 'rdv_tel', 'bilans', 'rdv_phys', 'nego', 'loi'];
+  const labels = ['Sourcing', 'RDV tél', 'Bilans reçus', 'RDV physique', 'En négociation', 'LOI signée'];
+  
+  let html = '';
+  stages.forEach((stage, i) => {
+    const stageDeals = deals.filter(d => d.stage === stage);
+    html += `<div class="col">
+      <div class="col-title">${labels[i]} (${stageDeals.length})</div>
+      <div class="col-body">`;
+    stageDeals.forEach(d => {
+      html += `<div class="card" onclick="alert('${d.name}\\n${d.loc}\\nCA: ${d.ca.toLocaleString()}€')">
+        <div class="card-name">${d.name}</div>
+        <div class="card-sub">${d.loc}</div>
+        <div class="card-kpis">
+          <div class="card-kpi">CA</div>
+          <div class="card-kpi">${(d.ca/1000).toFixed(0)}K€</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span class="card-badge badge-ca">${d.prio}</span>
+          <span class="card-badge" style="background:rgba(37,99,235,.1);color:var(--blue)">${d.prob}%</span>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('board').innerHTML = html;
+}
+
+// Claude Chat
+function addInitialMessage() {
+  addMessage('Bonjour ! Je suis Claude, votre assistant IA. Je peux vous aider à analyser vos deals, évaluer des stratégies de valorisation, et fournir des recommandations financières. Qu\'aimeriez-vous savoir ?', 'claude');
+}
+
+function addMessage(text, sender = 'user') {
+  chatHistory.push({role: sender === 'claude' ? 'assistant' : 'user', content: text});
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  div.innerHTML = `
+    <div class="msg-avatar">${sender === 'claude' ? '🤖' : '👤'}</div>
+    <div class="msg-content">${escapeHtml(text)}</div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if(!message) return;
+  
+  if(!apiKey) {
+    addMessage('Veuillez d\'abord configurer votre clé API dans les Paramètres.', 'claude');
+    input.value = '';
+    return;
+  }
+  
+  addMessage(message, 'user');
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+  
+  callClaude(message, (response) => {
+    if(response) addMessage(response, 'claude');
+    else addMessage('Erreur de connexion API.', 'claude');
+    document.getElementById('sendBtn').disabled = false;
+  });
+}
+
+function callClaude(userMessage, callback) {
+  const messages = [...chatHistory.slice(-10), {role: 'user', content: userMessage}];
+  
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-1',
+      max_tokens: 1024,
+      system: 'Vous êtes Claude, expert en M&A et valorisation d\'entreprises. Aidez Makan Diaby, entrepreneur en transport. Répondez en français, concis et professionnel.',
+      messages: messages
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.content && data.content[0]) callback(data.content[0].text);
+    else callback(null);
+  })
+  .catch(e => {
+    console.error(e);
+    callback(null);
+  });
+}
+
+function escapeHtml(text) {
+  const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'};
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// API Management
+function saveApiKeyModal() {
+  const key = document.getElementById('modalApiKeyInput').value.trim();
+  if(key.startsWith('sk-ant-')) {
+    localStorage.setItem('diaby_api_key', key);
+    apiKey = key;
+    document.getElementById('apiModal').classList.remove('open');
+    document.getElementById('apiKeyInput').value = key;
+  } else {
+    alert('Clé invalide. Elle doit commencer par "sk-ant-"');
+  }
+}
+
+function skipApiSetup() {
+  location.hash = '#skip-api';
+  document.getElementById('apiModal').classList.remove('open');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(key.startsWith('sk-ant-')) {
+    localStorage.setItem('diaby_api_key', key);
+    apiKey = key;
+    showStatus('✅ Clé sauvegardée', 'ok');
+  } else {
+    showStatus('❌ Clé invalide', 'error');
+  }
+}
+
+function testApiKey() {
+  if(!apiKey) {
+    showStatus('❌ Aucune clé API', 'error');
+    return;
+  }
+  showStatus('⏳ Test en cours...', 'ok');
+  callClaude('Réponds OK', (r) => {
+    if(r) showStatus('✅ Connexion réussie !', 'ok');
+    else showStatus('❌ Erreur de connexion', 'error');
+  });
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('apiStatus');
+  el.textContent = msg;
+  el.className = 'api-status ' + type;
+}
+
+// Start
+window.addEventListener('load', init);
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey && document.getElementById('chatInput') === document.activeElement) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+</body>
+</html>
